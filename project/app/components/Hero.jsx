@@ -130,15 +130,19 @@ export default function Hero() {
         </div>
       </section>
 
+
       {/* ========== MISSION SECTION ========== */}
       <section className="flex flex-col md:flex-row items-center justify-center gap-14 bg-gray-50 py-20 px-8">
+
         <div className="relative md:w-1/2 w-full">
           <img
-            src="/team.jpg"
+            src="/team1.jpg"
             alt="Financial Team"
-            className="rounded-3xl shadow-xl w-full border border-gray-100"
+            className="rounded-3xl shadow-2xl w-full h-[480px] object-cover border border-gray-100"
           />
-          <div className="absolute bottom-6 left-6 bg-white shadow-md rounded-2xl px-5 py-3 flex items-center gap-3">
+
+
+          <div className="absolute bottom-6 right-6 bg-white shadow-lg rounded-2xl px-5 py-3 flex items-center gap-3 border border-gray-100">
             <div className="bg-blue-100 text-blue-600 p-3 rounded-full">
               <i className="fa-solid fa-trophy text-xl"></i>
             </div>
@@ -147,7 +151,9 @@ export default function Hero() {
               <p className="text-sm text-gray-500">Awards Won</p>
             </div>
           </div>
+
         </div>
+
 
         <div className="md:w-1/2 w-full text-left">
           <h2 className="text-4xl font-extrabold text-gray-800 mb-5">
@@ -179,6 +185,7 @@ export default function Hero() {
           </button>
         </div>
       </section>
+
 
       {/* ========== SERVICES SECTION ========== */}
       <section className="text-center py-24 bg-white px-6">
@@ -260,20 +267,53 @@ export default function Hero() {
           />
         </div>
       </section>
-      <section className="bg-white py-16 text-center">
-        <p className="text-gray-500 text-sm uppercase tracking-wide mb-2">
-          Trusted by leading financial institutions
-        </p>
-        <h2 className="text-3xl font-bold text-gray-800 mb-8">Our Partners</h2>
+      <section className="bg-gradient-to-b from-white to-blue-50 py-16 text-center">
+  <p className="text-gray-500 text-sm uppercase tracking-widest mb-2">
+    Trusted by Leading Financial Institutions
+  </p>
 
-        <div className="flex flex-wrap justify-center items-center gap-10 max-w-6xl mx-auto">
-          <img src="/partners/hdfc.png" alt="HDFC Bank" className="h-12 opacity-80 hover:opacity-100 transition" />
-          <img src="/partners/icici.png" alt="ICICI Bank" className="h-12 opacity-80 hover:opacity-100 transition" />
-          <img src="/partners/axis.png" alt="Axis Bank" className="h-12 opacity-80 hover:opacity-100 transition" />
-          <img src="/partners/lic.png" alt="LIC" className="h-12 opacity-80 hover:opacity-100 transition" />
-          <img src="/partners/maxlife.png" alt="Max Life" className="h-12 opacity-80 hover:opacity-100 transition" />
-        </div>
-      </section>
+  <h2 className="text-3xl font-extrabold text-gray-800 mb-12">
+    Our <span className="text-blue-600">Partners</span>
+  </h2>
+
+  <div className="flex flex-wrap justify-center items-center gap-12 max-w-6xl mx-auto">
+   
+    <img
+      src="/partners/hdfc.png"
+      alt="HDFC Bank"
+      className="h-14 opacity-80 hover:opacity-100 transition-transform duration-300 hover:scale-110"
+    />
+
+    
+    <img
+      src="/partners/icici.png"
+      alt="ICICI Bank"
+      className="h-14 opacity-80 hover:opacity-100 transition-transform duration-300 hover:scale-110"
+    />
+
+    
+    <img
+      src="/partners/axis.png"
+      alt="Axis Bank"
+      className="h-14 opacity-80 hover:opacity-100 transition-transform duration-300 hover:scale-110"
+    />
+
+    
+    <img
+      src="/partners/lic.png"
+      alt="LIC"
+      className="h-14 opacity-80 hover:opacity-100 transition-transform duration-300 hover:scale-110"
+    />
+
+    
+    <img
+      src="/partners/maxlife.png"
+      alt="Max Life Insurance"
+      className="h-14 opacity-80 hover:opacity-100 transition-transform duration-300 hover:scale-110"
+    />
+  </div>
+</section>
+
 
       {/* ---------- READY TO GROW SECTION ---------- */}
       <section className="py-20 px-8 mx-8 bg-gradient-to-r from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-xl mt-20">

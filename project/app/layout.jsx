@@ -1,6 +1,5 @@
 import "./globals.css";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import ClientRootLayout from "./ClientRootLayout";
 
 export const metadata = {
   title: "Pioneer Wealth",
@@ -11,22 +10,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* ✅ Font Awesome CDN — yehi jagah sahi hai */}
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
         />
       </head>
 
+      {/* 👇 Client-only logic is now inside ClientRootLayout */}
       <body className="bg-gray-50 flex flex-col min-h-screen">
-        {/* Navbar (Top Section) */}
-        <Navbar />
-
-        {/* Main Page Content */}
-        <main className="flex-grow">{children}</main>
-
-        {/* Footer (Bottom Section) */}
-        <Footer />
+        <ClientRootLayout>{children}</ClientRootLayout>
       </body>
     </html>
   );

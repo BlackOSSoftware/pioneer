@@ -24,7 +24,7 @@ export default function Navbar() {
           <Link href="/about" className="text-gray-700 hover:text-blue-600">About</Link>
           <Link href="/Services" className="text-gray-700 hover:text-blue-600">Services</Link>
           <Link href="/Product" className="text-gray-700 hover:text-blue-600">Products</Link>
-          <Link href="/insurance" className="text-gray-700 hover:text-blue-600">Insurance</Link>
+          <Link href="/Insurance" className="text-gray-700 hover:text-blue-600">Insurance</Link>
           <Link href="/financial-planning" className="text-gray-700 hover:text-blue-600">Financial Planning</Link>
           <Link href="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
           <Link
@@ -52,7 +52,7 @@ export default function Navbar() {
             <Link href="/about" className="text-gray-700 hover:text-blue-600" onClick={() => setMenuOpen(false)}>About</Link>
             <Link href="/services" className="text-gray-700 hover:text-blue-600" onClick={() => setMenuOpen(false)}>Services</Link>
             <Link href="/Product" className="text-gray-700 hover:text-blue-600" onClick={() => setMenuOpen(false)}>Products</Link>
-            <Link href="/insurance" className="text-gray-700 hover:text-blue-600" onClick={() => setMenuOpen(false)}>Insurance</Link>
+            <Link href="/Insurance" className="text-gray-700 hover:text-blue-600" onClick={() => setMenuOpen(false)}>Insurance</Link>
             <Link href="/financial-planning" className="text-gray-700 hover:text-blue-600" onClick={() => setMenuOpen(false)}>Financial Planning</Link>
             <Link href="/contact" className="text-gray-700 hover:text-blue-600" onClick={() => setMenuOpen(false)}>Contact</Link>
             <Link

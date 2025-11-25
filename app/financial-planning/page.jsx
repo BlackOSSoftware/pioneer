@@ -32,12 +32,10 @@ export default function FinancialPlanningPage() {
   return (
     <div className="min-h-screen bg-gray-50">
     
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white text-center py-16 shadow-md">
-        <div className="flex justify-center mb-4">
-          <Target size={42} className="text-white" />
-        </div>
+      <div className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
+        
         <h1 className="text-4xl font-bold mb-3 tracking-tight">
-          Financial Planning
+          Financial <span className="text-yellow-300">Planning</span>
         </h1>
         <p className="text-lg text-blue-100 max-w-2xl mx-auto leading-relaxed">
           Plan your financial future with our expert guidance and powerful calculators.
@@ -45,7 +43,7 @@ export default function FinancialPlanningPage() {
       </div>
 
      
-      <section className="max-w-6xl mx-auto mt-16 bg-white border border-gray-200 rounded-2xl shadow-lg p-10">
+      <section className="max-w-6xl mx-auto mt-16 bg-white border border-gray-200 rounded-2xl  p-10 shadow-lg ">
         <h2 className="text-3xl font-bold text-gray-800 text-center mb-2">
           Financial Calculators
         </h2>
@@ -76,7 +74,7 @@ export default function FinancialPlanningPage() {
 
         {/* ====================== SIP Calculator ====================== */}
         {activeTab === "sip" && (
-          <div className="bg-gray-50 border border-gray-200 p-8 rounded-2xl shadow-inner">
+          <div className="bg-gray-50 border border-gray-200 p-8 rounded-2xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               
               <div>
@@ -154,16 +152,16 @@ export default function FinancialPlanningPage() {
 
              
               <div className="space-y-6">
-                <div className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
-                  <p className="text-gray-500 text-sm">Total Investment</p>
-                  <h2 className="text-2xl font-semibold text-gray-800">
+                <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-xl shadow-md border border-blue-400">
+                  <p className="text-blue-100 text-sm">Total Investment</p>
+                  <h2 className="text-3xl font-semibold tracking-tight">
                     ₹{totalInvestment.toLocaleString()}
                   </h2>
                 </div>
 
-                <div className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
-                  <p className="text-gray-500 text-sm">Estimated Returns</p>
-                  <h2 className="text-2xl font-semibold text-green-600">
+                <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-xl shadow-md border border-blue-400">
+                  <p className="text-blue-100 text-sm">Estimated Returns</p>
+                  <h2 className="text-3xl font-semibold tracking-tight">
                     ₹{estimatedReturns.toLocaleString()}
                   </h2>
                 </div>
@@ -185,7 +183,7 @@ export default function FinancialPlanningPage() {
       </section>
 
       
-      <section className="max-w-6xl mx-auto mt-16 bg-white border border-gray-200 rounded-2xl shadow-lg p-10 mb-20">
+      <section className="max-w-6xl mx-auto mt-10 bg-white border   border-gray-200 rounded-2xl shadow-lg p-10 mb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
         
           <div>
@@ -230,7 +228,7 @@ export default function FinancialPlanningPage() {
           </div>
 
          
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 shadow-inner">
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 shadow-inner transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ">
             <form className="space-y-5">
               <div>
                 <label className="block text-gray-700 font-medium mb-2">

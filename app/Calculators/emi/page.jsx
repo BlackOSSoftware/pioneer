@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Pie, Bar } from "react-chartjs-2";
 import jsPDF from "jspdf";
-
+import Link from "next/link";
 import "@/lib/chartjs-fix";
 import {
     Chart as ChartJS,
@@ -33,7 +33,7 @@ ChartJS.register(
 );
 
 export default function HomeLoanEMIPage() {
-  
+
     const [loan, setLoan] = useState(2500000);
     const [rate, setRate] = useState(12.5);
     const [tenure, setTenure] = useState(20);
@@ -43,7 +43,7 @@ export default function HomeLoanEMIPage() {
     const pieContainerRef = useRef(null);
     const barContainerRef = useRef(null);
 
-   
+
     const months = useMemo(
         () =>
             tenureMode === "years"
@@ -63,7 +63,7 @@ export default function HomeLoanEMIPage() {
     const totalPayment = EMI * months;
     const totalInterest = totalPayment - loan;
 
-   
+
     const schedule = useMemo(() => {
         const rows = [];
         let balance = loan;
@@ -90,7 +90,7 @@ export default function HomeLoanEMIPage() {
             });
         }
 
-     
+
         const yearsMap = {};
         rows.forEach((r) => {
             if (!yearsMap[r.year]) yearsMap[r.year] = [];
@@ -112,7 +112,7 @@ export default function HomeLoanEMIPage() {
             }));
     }, [loan, monthlyRate, EMI, months]);
 
-   
+
     const yearlyChartData = useMemo(() => {
         return {
             labels: schedule.map((s) => s.year.toString()),
@@ -121,13 +121,13 @@ export default function HomeLoanEMIPage() {
                     label: "Principal",
                     type: "bar",
                     data: schedule.map((s) => Math.round(s.totals.principal)),
-                    backgroundColor: "#0f6b87"
+                    backgroundColor: "#93C5FD",
                 },
                 {
                     label: "Interest",
                     type: "bar",
                     data: schedule.map((s) => Math.round(s.totals.interest)),
-                    backgroundColor: "#bfe066"
+                    backgroundColor:  "#3B82F6",
                 },
                 {
                     label: "Balance",
@@ -175,19 +175,19 @@ export default function HomeLoanEMIPage() {
             datasets: [
                 {
                     data: [loan, totalInterest],
-                    backgroundColor: ["#0f6b87", "#bfe066"],
+                    backgroundColor: ["#93C5FD", "#3B82F6"],
                     borderWidth: 0
                 }
             ]
         };
     }, [loan, totalInterest]);
 
-    
+
     const fmt = (v) => `₹ ${Math.round(v).toLocaleString("en-IN")}`;
 
     const downloadPDF = () => {
         try {
-            
+
             const pieCanvas = pieContainerRef.current?.querySelector("canvas");
             const barCanvas = barContainerRef.current?.querySelector("canvas");
 
@@ -203,8 +203,8 @@ export default function HomeLoanEMIPage() {
             const W = pdf.internal.pageSize.getWidth();
             let y = 35;
 
-            
-            pdf.setFillColor("#0b7a55");
+
+            pdf.setFillColor("#3B82F6");
             pdf.rect(0, 0, W, 55, "F");
             pdf.setFontSize(18).setTextColor("#fff");
             pdf.text("Pioneer Wealth - EMI Report", 30, 35);
@@ -216,7 +216,7 @@ export default function HomeLoanEMIPage() {
             pdf.text("Investment Breakdown", 30, y - 10);
             pdf.addImage(pieImg, "PNG", 30, y, 200, 200);
 
-            
+
             const boxW = (W - 280) / 3;
             const summary = [
                 ["Monthly EMI", fmt(EMI)],
@@ -246,32 +246,40 @@ export default function HomeLoanEMIPage() {
         setShowYearAccordion((prev) => ({ ...prev, [year]: !prev[year] }));
     }
 
-   
+
     return (
         <div className="w-full">
-           
-            <section className="w-full bg-[#f5f9ff] pt-8 pb-4 shadow-sm mt-20">
-                <h1 className="text-4xl font-semibold text-center text-gray-900">EMI Home Loan Calculator</h1>
-                <p className="text-center text-gray-600 mt-2">
-                    Home <span className="mx-1">/</span> Tools & Calculators <span className="mx-1">/</span>{" "}
-                    <span className="text-green-600 font-medium">EMI Home Loan Calculator</span>
-                </p>
+
+            <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
+                <div className="max-w-6xl mx-auto text-center px-4">
+                    <h1 className="text-4xl font-semibold text-white-900 mb-2">
+                        EMI Home Loan <span className="text-yellow-300">Calculator </span>
+                    </h1>
+                    <div className="flex justify-center gap-2 text-sm text-white-600">
+                        <Link href="/">Home</Link>
+
+                        <span className="text-white-400">/</span>
+                        <span>Tools & Calculators</span>
+                        <span className="text-gray-400">/</span>
+                        <span className="text-[white] font-medium">EMI Home Loan Calculator</span>
+                    </div>
+                </div>
             </section>
 
             <section className="w-full mt-8 px-6 flex justify-center">
                 <div className="bg-white rounded-2xl shadow-xl p-6 max-w-7xl w-full">
-                   
+
                     <div className="flex justify-end mb-4">
                         <button onClick={downloadPDF} className="bg-blue-900 text-white px-6 py-2 rounded-md hover:bg-blue-800">
                             Download PDF
                         </button>
                     </div>
 
-                    
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                       
+
                         <div className="lg:col-span-2 space-y-6">
-                            
+
                             <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
                                 <label className="block text-sm text-gray-700 mb-2">Home Loan Amount (Rs)</label>
                                 <input readOnly value={loan.toLocaleString("en-IN")} className="w-full bg-white p-3 rounded-md border" />
@@ -293,7 +301,7 @@ export default function HomeLoanEMIPage() {
                                 </div>
                             </div>
 
-                          
+
                             <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
                                 <label className="block text-sm text-gray-700 mb-2">Interest Rate (% per annum)</label>
                                 <input readOnly value={rate} className="w-full bg-white p-3 rounded-md border" />
@@ -317,7 +325,7 @@ export default function HomeLoanEMIPage() {
                                 </div>
                             </div>
 
-                           
+
                             <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
                                 <label className="block text-sm text-gray-700 mb-2">Loan Tenure</label>
 
@@ -354,7 +362,7 @@ export default function HomeLoanEMIPage() {
                             </div>
                         </div>
 
-                        
+
                         <div className="space-y-6">
                             <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
                                 <div className="flex justify-center">
@@ -362,17 +370,17 @@ export default function HomeLoanEMIPage() {
                                         <Pie data={pieData} />
                                         <div className="flex justify-center gap-4 mt-3 text-sm">
                                             <span className="flex items-center gap-1">
-                                                <span className="w-3 h-3 bg-[blue] inline-block rounded-sm" /> Interest Amount
+                                                <span className="w-3 h-3 bg-[#3B82F6] inline-block rounded-sm" /> Interest Amount
                                             </span>
                                             <span className="flex items-center gap-1">
-                                                <span className="w-3 h-3 bg-[#0f6b87] inline-block rounded-sm" /> Principal
+                                                <span className="w-3 h-3 bg-[#93C5FD] inline-block rounded-sm" /> Principal
                                             </span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                         
+
                             <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
                                 <div className="space-y-4">
                                     <div className="text-center border-b pb-4">
@@ -394,7 +402,7 @@ export default function HomeLoanEMIPage() {
                         </div>
                     </div>
 
-                  
+
                     <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
                         <h3 className="text-center text-lg font-semibold mb-4">(EMI) Chart</h3>
 
@@ -404,13 +412,13 @@ export default function HomeLoanEMIPage() {
                             </div>
                         </div>
 
-                       
+
                         <div className="mt-8">
                             <div className="bg-white border rounded-lg">
                                 <div className="overflow-x-auto">
                                     <table className="min-w-full text-left">
-                                        <thead>
-                                            <tr className="bg-[#0f6b87] text-white">
+                                        <thead className="bg-[#3B82F6]">
+                                            <tr className="bg-[#3B82F6] text-white p-4 rounded-bl-xl rounded-br-xl" >
                                                 <th className="px-4 py-3"></th>
                                                 <th className="px-4 py-3">Year</th>
                                                 <th className="px-4 py-3">Principal (A)</th>

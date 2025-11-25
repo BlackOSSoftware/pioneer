@@ -88,7 +88,7 @@ export default function BecomeCrorepatiPage() {
             datasets: [
                 {
                     data: [totalInvestedApprox || 1, Math.max(totalGrowthApprox || 0, 0.01)],
-                    backgroundColor: ["#b7e0c9", "#0b7a55"],
+                    backgroundColor: ["#93C5FD", "#3B82F6"],
                 },
             ],
         }),
@@ -107,8 +107,8 @@ export default function BecomeCrorepatiPage() {
         return {
             labels: Array.from({ length: months }, (_, i) => `${Math.round(((i + 1) / months) * yearsToSave)}y`),
             datasets: [
-                { label: "Invested", data: investedSeries, backgroundColor: "#cbe8d9" },
-                { label: "Value", data: valueSeries, backgroundColor: "#2b8b6f" },
+                { label: "Invested", data: investedSeries, backgroundColor: "#93C5FD" },
+                { label: "Value", data: valueSeries, backgroundColor: "#3B82F6" },
             ],
         };
     }, [totalInvestedApprox, futureValue, yearsToSave]);
@@ -130,9 +130,9 @@ export default function BecomeCrorepatiPage() {
         let y = 30;
 
 
-        pdf.setFillColor("#0b7a55");
+        pdf.setFillColor("#3B82F6");
         pdf.rect(0, 0, W, 50, "F");
-        pdf.setFontSize(18).setTextColor("#fff");
+        pdf.setFontSize(18).setTextColor("#93C5FD");
         pdf.text("Pioneer Wealth", 40, 36);
         pdf.setFontSize(9).text(`Generated: ${new Date().toLocaleString()}`, W - 170, 36);
 
@@ -172,7 +172,7 @@ export default function BecomeCrorepatiPage() {
 
 
         y += 8;
-        pdf.setFillColor("#0b7a55");
+        pdf.setFillColor("#3B82F6");
         pdf.rect(tableX, y, tableW, 24, "F");
         pdf.setFontSize(11).setTextColor("#fff");
         pdf.text("Metric", tableX + 12, y + 16);
@@ -229,22 +229,28 @@ export default function BecomeCrorepatiPage() {
     return (
         <div className="min-h-screen bg-gray-50 pb-16">
 
-            <section className="w-full bg-[#f5f9ff] pt-8 pb-4 shadow-sm mt-20">
-                <div className="max-w-6xl mx-auto text-center px-4">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Become A Crorepati Calculator</h1>
-                    <div className="flex justify-center gap-2 text-sm text-gray-600 mb-2">
-                        <Link href="/">Home</Link>
+           <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
+        <div className="max-w-6xl mx-auto text-center px-4">
 
-                        <span className="text-gray-400">/</span>
-                        <span>Tools & Calculators</span>
-                        <span className="text-gray-400">/</span>
-                        <span className="text-[#55a630] font-medium">Become A Crorepati Calculator</span>
-                    </div>
-                    <div className="flex justify-center">
-                        <div className="w-28 h-[3px] bg-green-600 rounded-full" />
-                    </div>
-                </div>
-            </section>
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 drop-shadow-md">
+            Become A Crorepati<span className="text-yellow-300"> Calculator</span>
+          </h1>
+
+          <div className="text-blue-100 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+            <Link href="/">Home</Link>
+
+            <span className="text-white-400">/</span>
+            <span>Tools & Calculators</span>
+            <span className="text-white-400">/</span>
+            <span >Become A Crorepati Calculators </span>
+          </div>
+
+          <div className="flex justify-center">
+            <div className="w-20 h-[3px] bg-black-900 rounded-full"></div>
+          </div>
+
+        </div>
+      </section> 
 
 
             <main className="max-w-7xl mx-auto px-6 pt-10">
@@ -391,49 +397,49 @@ export default function BecomeCrorepatiPage() {
                             <Pie ref={pieRef} data={pieData} />
                         </div>
 
-                        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 text-[16px]">
+                        <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-xl shadow-md border border-blue-400">
 
 
-                            <h4 className="font-bold text-gray-900 text-center text-lg mb-4">
+                            <h4 className="font-bold  text-blue-100  text-center text-lg mb-4">
                                 Monthly SIP Amount
                             </h4>
 
 
-                            <p className="text-center text-[20px] font-semibold text-gray-800 mb-6">
+                            <p className="text-center text-[20px] font-semibold  mb-6">
                                 {formatNum(Math.round(monthlyNeeded))}
-                                <span className="text-sm text-gray-600"> (years you need to save)</span>
+                                <span className="text-sm text-blue-100"> (years you need to save)</span>
                             </p>
 
 
-                            <div className="py-5 border-t border-dotted text-center">
-                                <p className="font-semibold text-gray-800">
+                            <div className="py-5 border-t border-b text-center">
+                                <p className="font-semibold text-blue-100">
                                     Total Amount Invested through SIP in years
                                 </p>
-                                <p className="text-[17px] mt-1">{formatNum(Math.round(totalInvestedApprox))}</p>
+                                <p className="text-[20px] font-semibold mt-1">{formatNum(Math.round(totalInvestedApprox))}</p>
                             </div>
 
 
-                            <div className="py-5 border-t border-dotted text-center">
-                                <p className="font-semibold text-gray-800">Total Growth Amount</p>
-                                <p className="text-[17px] mt-1">{formatNum(Math.round(totalGrowthApprox))}</p>
+                            <div className="py-5 border-t border-b text-center">
+                                <p className="font-semibold text-blue-100">Total Growth Amount</p>
+                                <p className="text-[20px] font-semibold mt-1">{formatNum(Math.round(totalGrowthApprox))}</p>
                             </div>
 
 
-                            <div className="py-5 border-t border-dotted text-center">
-                                <p className="font-semibold text-gray-800">
+                            <div className="py-5 border-t border-b text-center">
+                                <p className="font-semibold text-blue-100">
                                     Your targeted Wealth Amount (Inflation adjusted)
                                 </p>
-                                <p className="text-[17px] mt-1">{formatNum(Math.round(targetInflationAdjusted))}</p>
+                                <p className="text-[20px] font-semibold mt-1">{formatNum(Math.round(targetInflationAdjusted))}</p>
                             </div>
 
 
 
 
-                            <div className="py-5 border-t border-dotted text-center">
-                                <p className="font-semibold text-gray-800">
+                            <div className="py-5 border-t border-b text-center">
+                                <p className="font-semibold text-blue-100">
                                     Final Targeted Amount (Minus growth of your savings)
                                 </p>
-                                <p className="text-[17px] mt-1">
+                                <p className="text-[20px] font-semibold mt-1">
                                     {formatNum(
                                         Math.max(0, Math.round(targetInflationAdjusted - totalGrowthApprox))
                                     )}

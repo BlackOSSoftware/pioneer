@@ -76,7 +76,7 @@ export default function SIPReturnPage() {
     datasets: [
       {
         data: [totalInvested, totalGrowth],
-        backgroundColor: ["#0b7a55", "#7fcfb1"],
+        backgroundColor: ["#93C5FD", "#3B82F6"],
       },
     ],
   };
@@ -92,13 +92,13 @@ export default function SIPReturnPage() {
         label: "Invested",
         type: "bar",
         data: Array.from({ length: 12 }, (_, i) => totalInvested * ((i + 1) / 12)),
-        backgroundColor: "#cbe8d9",
+        backgroundColor: "#93C5FD",
       },
       {
         label: "Value",
         type: "bar",
         data: Array.from({ length: 12 }, (_, i) => futureValue * ((i + 1) / 12)),
-        backgroundColor: "#2b8b6f",
+        backgroundColor: "#3B82F6",
       },
     ],
   };
@@ -118,12 +118,12 @@ export default function SIPReturnPage() {
     let y = 35;
 
 
-    pdf.setFillColor("#0b7a55");
+    pdf.setFillColor("#3B82F6");
     pdf.rect(0, 0, W, 55, "F");
-    pdf.setFontSize(18).setTextColor("#fff");
+    pdf.setFontSize(18).setTextColor("#93C5FD");
     pdf.text("Pioneer Wealth", 30, 35);
 
-    pdf.setFontSize(9).setTextColor("#fff");
+    pdf.setFontSize(9).setTextColor("#93C5FD");
     pdf.text(`Generated: ${new Date().toLocaleString()}`, W - 180, 35);
 
 
@@ -139,7 +139,7 @@ export default function SIPReturnPage() {
 
     summary.forEach((s, i) => {
       const x = 30 + i * (boxW + 10);
-      pdf.setDrawColor("#cccccc");
+      pdf.setDrawColor("#93C5FD");
       pdf.roundedRect(x, y, boxW, 45, 5, 5);
       pdf.setFontSize(10).setTextColor("#333").text(s[0], x + 8, y + 15);
       pdf.setFontSize(12).setTextColor("#000").text(s[1], x + 8, y + 32);
@@ -166,7 +166,7 @@ export default function SIPReturnPage() {
 
     const tableW = W - 60;
 
-    pdf.setFillColor("#0b7a55");
+    pdf.setFillColor("#3B82F6");
     pdf.rect(30, y, tableW, 23, "F");
     pdf.setFontSize(11).setTextColor("#fff").text("Metric", 40, y + 16);
     pdf.text("Amount", 30 + tableW - 10, y + 16, { align: "right" });
@@ -204,24 +204,24 @@ export default function SIPReturnPage() {
     <div className="min-h-screen bg-gray-50 pb-20">
 
 
-      <section className="w-full bg-[#f5f9ff] pt-8 pb-4 shadow-sm mt-20">
+      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
         <div className="max-w-6xl mx-auto text-center px-4">
 
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-3">
-            SIP Return Calculator
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 drop-shadow-md">
+            SIP Return<span className="text-yellow-300"> Calculator</span>
           </h1>
 
-          <div className="flex justify-center gap-2 text-sm text-gray-600 mb-3">
+          <div className="text-blue-100 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
             <Link href="/">Home</Link>
 
-            <span className="text-gray-400">/</span>
+            <span className="text-white-400">/</span>
             <span>Tools & Calculators</span>
-            <span className="text-gray-400">/</span>
-            <span className="text-[#55a630] font-semibold">SIP Return Calculator</span>
+            <span className="text-white-400">/</span>
+            <span >SIP Return Calculator</span>
           </div>
 
           <div className="flex justify-center">
-            <div className="w-20 h-[3px] bg-green-600 rounded-full"></div>
+            <div className="w-20 h-[3px] bg-black-900 rounded-full"></div>
           </div>
 
         </div>
@@ -256,7 +256,7 @@ export default function SIPReturnPage() {
                 step={100}
                 value={monthly}
                 onChange={(e) => setMonthlySafe(Number(e.target.value))}
-                className="w-full accent-green-600"
+                className="w-full accent-blue-600"
               />
 
               <SliderMarks marks={["0", "25 cr", "50 cr", "75 cr", "100 cr"]} />
@@ -282,7 +282,7 @@ export default function SIPReturnPage() {
                 step={1}
                 value={months}
                 onChange={(e) => setMonthsSafe(Number(e.target.value))}
-                className="w-full accent-green-600"
+                className="w-full accent-blue-600"
               />
 
               <SliderMarks marks={["0", "75", "150", "225", "300", "375", "450"]} />
@@ -308,7 +308,7 @@ export default function SIPReturnPage() {
                 step={0.1}
                 value={annualReturn}
                 onChange={(e) => setReturnSafe(Number(e.target.value))}
-                className="w-full accent-green-600"
+                className="w-full accent-blue-600"
               />
 
               <SliderMarks marks={["0%", "7%", "15%", "22%", "30%"]} />
@@ -337,22 +337,22 @@ export default function SIPReturnPage() {
             </div>
 
 
-            <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 text-[15px]">
-              <h4 className="font-semibold text-gray-800 mb-3">Totals</h4>
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-xl shadow-md border border-blue-400">
+              <h4 className="text-blue-100 text-sm mb-3">Totals</h4>
 
               <div className="space-y-3">
                 <div className="flex justify-between border-b pb-2">
-                  <span>Total SIP Amount Invested</span>
+                  <span className="text-blue-100 text-sm" >Total SIP Amount Invested</span>
                   <b>{formatNum(totalInvested)}</b>
                 </div>
 
                 <div className="flex justify-between border-b pb-2">
-                  <span>Total Growth</span>
+                  <span className="text-blue-100 text-sm" >Total Growth</span>
                   <b>{formatNum(totalGrowth)}</b>
                 </div>
 
                 <div className="flex justify-between pt-2">
-                  <span>Future Value</span>
+                  <span className="text-blue-100 text-sm" >Future Value</span>
                   <b>{formatNum(futureValue)}</b>
                 </div>
               </div>

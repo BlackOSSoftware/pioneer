@@ -48,12 +48,12 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-gray-50">
      
-      <section className="bg-gradient-to-r from-blue-600 to-blue-500 text-white text-center py-16 shadow-md">
-        <h1 className="text-4xl font-bold mb-3 tracking-tight">Get In Touch</h1>
-        <p className="text-lg text-blue-100 max-w-2xl mx-auto leading-relaxed">
-          We'd love to hear from you. Let's discuss how we can help you achieve your
-          financial goals.
-        </p>
+      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
+        <h1 className="text-4xl font-bold mb-3 tracking-tight">Get In <span className="text-yellow-300"> Touch</span></h1>
+        <p className="text-lg text-blue-100 max-w-2xl mx-auto leading-relaxed whitespace-nowrap">
+  We'd love to hear from you. Let's discuss how we can help you achieve your financial goals.
+</p>
+
       </section>
 
       

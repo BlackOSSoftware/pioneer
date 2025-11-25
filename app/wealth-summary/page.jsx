@@ -1,19 +1,24 @@
+import Link from "next/link";
 export default function GoalSummary() {
     return (
         <div className="w-full">
 
 
-            <section className="w-full bg-blue-50 py-12 mt-10">
-                <h1 className="text-4xl font-semibold text-center text-gray-800">
-                    Wealth Creation
-                </h1>
+            <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
+        <div className="max-w-6xl mx-auto text-center px-4">
+                    <h1 className="text-4xl font-semibold text-white-900 mb-2">
+                        Wealth  <span className="text-yellow-300">Creation </span>
+                    </h1>
+                    <div className="flex justify-center gap-2 text-sm text-white-600">
+                        <Link href="/">Home</Link>
 
-                <p className="text-center text-gray-600 mt-2">
-                    Home <span className="mx-1">/</span> Goal{" "}
-                    <span className="mx-1">/</span>{" "}
-                    <span className="text-blue-600 font-medium">Wealth Creation</span>
-                </p>
-            </section>
+                        <span className="text-white-400">/</span>
+                        <span>Goal</span>
+                        <span className="text-white-400">/</span>
+                        <span className="text-[white] font-medium">Wealth Creation</span>
+                    </div>
+                </div>
+      </section>
 
 
             <section className="w-full py-16 flex justify-center ">

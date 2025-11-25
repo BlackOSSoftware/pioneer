@@ -146,7 +146,7 @@ export default function Services() {
   return (
     <>
      
-      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg mb-16">
+      <section className="py-20 px-6 mx-6 md:mx-12 mt-17 bg-gradient-to-r from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg mb-16 pb-5 pt-5">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
           Our <span className="text-yellow-300">Services</span>
         </h1>

@@ -104,7 +104,7 @@ export default function StepUpSIPCalculatorPage() {
     datasets: [
       {
         data: [simulation.totalInvested, simulation.totalGrowth],
-        backgroundColor: ["#2b8b6f", "#7fcfb1"],
+        backgroundColor: ["#93C5FD", "#3B82F6"],
       },
     ],
   };
@@ -115,12 +115,12 @@ export default function StepUpSIPCalculatorPage() {
       {
         label: "Invested (cumulative)",
         data: simulation.yearly.map((y) => Number(y.investedYear)),
-        backgroundColor: "#cbe8d9",
+        backgroundColor: "#93C5FD",
       },
       {
         label: "Value at Year End",
         data: simulation.yearly.map((y) => Math.round(y.valueAtYearEnd)),
-        backgroundColor: "#2b8b6f",
+        backgroundColor: "#3B82F6",
       },
     ],
   };
@@ -145,7 +145,7 @@ export default function StepUpSIPCalculatorPage() {
     let y = 30;
 
 
-    pdf.setFillColor("#0b7a55");
+    pdf.setFillColor("#3B82F6");
     pdf.rect(0, 0, W, 50, "F");
     pdf.setTextColor("#fff").setFontSize(18);
     pdf.text("Pioneer Wealth - SIP Step Up Report", 30, 35);
@@ -194,7 +194,7 @@ export default function StepUpSIPCalculatorPage() {
     const col1 = tableX + 10;
     const col2 = tableX + tableW * 0.33;
     const col3 = tableX + tableW * 0.60;
-    pdf.setFillColor("#0b7a55");
+    pdf.setFillColor("#3B82F6");
     pdf.rect(tableX, y, tableW, 24, "F");
     pdf.setFontSize(11).setTextColor("#fff");
     pdf.text("Year", col1, y + 16);
@@ -246,18 +246,18 @@ export default function StepUpSIPCalculatorPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
 
-      <section className="w-full bg-[#f5f9ff] pt-8 pb-4 shadow-sm mt-20">
+      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
         <div className="max-w-6xl mx-auto text-center px-4">
-          <h1 className="text-4xl font-semibold text-gray-900 mb-2">
-            Mutual Fund SIP Calculator Step Up
+          <h1 className="text-4xl font-semibold text-white-900 mb-2">
+            Mutual Fund SIP <span className="text-yellow-300">Calculator </span> Step Up
           </h1>
-          <div className="flex justify-center gap-2 text-sm text-gray-600">
+          <div className="flex justify-center gap-2 text-sm text-white-600">
             <Link href="/">Home</Link>
 
-            <span className="text-gray-400">/</span>
+            <span className="text-white-400">/</span>
             <span>Tools & Calculators</span>
             <span className="text-gray-400">/</span>
-            <span className="text-[#55a630] font-medium">Step Up Calculator</span>
+            <span className="text-[white] font-medium">Step Up Calculator</span>
           </div>
         </div>
       </section>
@@ -303,20 +303,20 @@ export default function StepUpSIPCalculatorPage() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-sm">
-              <h4 className="font-semibold text-gray-700 mb-3 text-center">Monthly SIP Summary</h4>
+            <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-xl shadow-md border border-blue-400">
+              <h4 className="font-semibold text-blue-100 mb-3 text-center">Monthly SIP Summary</h4>
               <div className="text-center text-xl font-semibold mb-2">{formatNum(Math.round(monthly))}</div>
               <div className="space-y-3">
-                <div className="flex justify-between border-t pt-3">
-                  <span>Total Invested</span>
+                <div className="flex justify-between  border-t pt-3">
+                  <span className="text-blue-100">Total Invested</span>
                   <b>{formatNum(Math.round(simulation.totalInvested))}</b>
                 </div>
                 <div className="flex justify-between border-t pt-3">
-                  <span>Total Growth</span>
+                  <span className="text-blue-100">Total Growth</span>
                   <b>{formatNum(Math.round(simulation.totalGrowth))}</b>
                 </div>
                 <div className="flex justify-between border-t pt-3">
-                  <span>Future Value</span>
+                  <span className="text-blue-100">Future Value</span>
                   <b>{formatNum(Math.round(simulation.totalValue))}</b>
                 </div>
               </div>
@@ -344,7 +344,7 @@ export default function StepUpSIPCalculatorPage() {
 
 
               <thead>
-                <tr className="bg-[#0b7a55] text-white border border-gray-300">
+                <tr className="bg-[#3B82F6] text-white border border-gray-300">
                   <th className="px-4 py-3 border border-gray-300">Year</th>
                   <th className="px-4 py-3 border border-gray-300">SIP Amount / Month</th>
                   <th className="px-4 py-3 border border-gray-300">Invested Amount / Year</th>

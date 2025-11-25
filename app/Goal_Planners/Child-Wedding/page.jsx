@@ -21,7 +21,7 @@ export default function WealthCreationPage() {
     }
 
     router.push(
-      `/Goal_Planners/Wealth_Dream?age=${afterYears}&cost=${amount}&inflation=${inflation}&returns=${returns}&risk=${risk}`
+      `/Goal_Planners/Child-Wedding-Dream?age=${afterYears}&cost=${amount}&inflation=${inflation}&returns=${returns}&risk=${risk}`
     );
   };
 
@@ -32,7 +32,7 @@ export default function WealthCreationPage() {
         <div className="max-w-6xl mx-auto text-center px-4">
 
           <h1 className="text-4xl font-semibold text-white-900 mb-2">
-            Wealth <span className="text-yellow-300">Creation</span>
+            Child <span className="text-yellow-300">Wedding</span>
           </h1>
 
           <div className="flex justify-center gap-2 text-sm text-white-600">

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import Link from "next/link";
 
 export default function DreamHomePage() {
   const router = useRouter();
@@ -29,7 +29,7 @@ export default function DreamHomePage() {
     risk
   }).toString();
 
-router.push(`/Goal_Planners/summary_goal?${q}`);
+router.push(`/Goal_Planners/Dream-home-Dream?${q}`);
 
 
 
@@ -38,21 +38,28 @@ router.push(`/Goal_Planners/summary_goal?${q}`);
   return (
     <div className="w-full">
      
-      <section className="w-full bg-[#e9f4ff] pt-12 pb-8 shadow-sm mt-20">
-        <h1 className="text-4xl font-semibold text-center text-gray-900">
-          Dream home
-        </h1>
-        <p className="text-center text-gray-600 mt-2">
-          Home / Goal / <span className="text-green-600 font-medium">Dream home</span>
-        </p>
+      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
+        <div className="max-w-6xl mx-auto text-center px-4">
+                    <h1 className="text-4xl font-semibold text-white-900 mb-2">
+                        Dream <span className="text-yellow-300">home </span>
+                    </h1>
+                    <div className="flex justify-center gap-2 text-sm text-white-600">
+                        <Link href="/">Home</Link>
+
+                        <span className="text-white-400">/</span>
+                        <span>Goal</span>
+                        <span className="text-white-400">/</span>
+                        <span className="text-[white] font-medium">Dream home</span>
+                    </div>
+                </div>
       </section>
 
    
-      <section className="w-full py-16 flex justify-center">
+      <section className="w-full py-12 flex justify-center">
         <div className="bg-white rounded-xl shadow-2xl p-12 max-w-6xl w-full">
           <div className="text-gray-700 text-[18px] leading-relaxed space-y-14">
 
-            <p className="text-center">
+            <p className="text-center ">
               You are planning to buy your Dream House
               <input
                 type="number"
@@ -61,7 +68,7 @@ router.push(`/Goal_Planners/summary_goal?${q}`);
                 className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-32 text-center pb-1"
                 placeholder="Years"
               />
-              years. The cost of this House would be around
+               years. The cost of this House would be around
               <input
                 type="number"
                 value={houseCost}
@@ -69,10 +76,11 @@ router.push(`/Goal_Planners/summary_goal?${q}`);
                 className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-40 text-center pb-1"
                 placeholder="Amount"
               />
-              in today's value.
+             
             </p>
 
             <p className="text-center">
+               in today's value.
               <input
                 type="number"
                 value={inflation}

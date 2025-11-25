@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import Link from "next/link";
 export default function RetirementGoalPage() {
   const [age, setAge] = useState("");
   const [retireAge, setRetireAge] = useState("");
@@ -17,14 +17,20 @@ export default function RetirementGoalPage() {
     <div className="w-full">
 
       
-      <section className="w-full bg-[#e9f4ff] pt-12 pb-8 shadow-sm mt-20">
-        <h1 className="text-4xl font-semibold text-center text-gray-900">
-          Retirement
-        </h1>
+      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-19 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
+        <div className="max-w-6xl mx-auto text-center px-4">
+                    <h1 className="text-4xl font-semibold text-white-900 mb-2">
+                        Retirement
+                    </h1>
+                    <div className="flex justify-center gap-2 text-sm text-white-600">
+                        <Link href="/">Home</Link>
 
-        <p className="text-center text-gray-600 mt-2">
-          Home / Goal / <span className="text-green-600 font-medium">Retirement</span>
-        </p>
+                        <span className="text-white-400">/</span>
+                        <span>Goal</span>
+                        <span className="text-white-400">/</span>
+                        <span className="text-[white] font-medium">Retirement</span>
+                    </div>
+                </div>
       </section>
 
     
@@ -74,14 +80,16 @@ export default function RetirementGoalPage() {
                 onChange={(e) => setInflation(e.target.value)}
                 className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-24 pb-1 text-center"
               />
-              % and expect
+              %  <br/><br/>
+              and expect
+             
               <input
                 type="number"
                 value={returns}
                 onChange={(e) => setReturns(e.target.value)}
                 className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-24 pb-1 text-center"
               />
-              % earning on retirement corpus.
+               % earning on retirement corpus.
             </p>
 
           

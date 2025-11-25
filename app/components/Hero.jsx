@@ -5,19 +5,42 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 export default function Hero() {
-  const images = [
-    "/bg/bg1.jpg",
-    "/bg/bg2.jpg",
-    "/bg/bg3.jpg",
-    "/bg/bg4.jpg",
-
+  const slideData = [
+    {
+      img: "/bg/bg1.jpg",
+      title: "Your Trusted Partner In",
+      highlight: "Wealth Creation",
+      buttonText: "Explore Wealth Services →",
+      buttonURL: "/Goal_Planners/Wealth-Creation"
+    },
+    {
+      img: "/bg/bg2.jpg",
+      title: "Start Building the",
+      highlight: "Home You Truly Deserve",
+      buttonText: "Begin Your Dream Home Plan →",
+      buttonURL: "/Goal_Planners/Dream-home"
+    },
+    {
+      img: "/bg/bg3.jpg",
+      title: "Plan For A Better Tomorrow",
+      highlight: "Retirement Planning",
+      buttonText: "Plan Retirement →",
+      buttonURL: "/Goal_Planners/Retirement"
+    },
+    {
+      img: "/bg/bg4.jpg",
+      title: "Build A Strong Future With",
+      highlight: "Child Education Goal",
+      buttonText: "Start Child Planning →",
+      buttonURL: "/Goal_Planners/Child-Education"
+    }
   ];
 
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
+      setIndex((prev) => (prev + 1) % slideData.length);
     }, 3500);
     return () => clearInterval(interval);
   }, []);
@@ -59,7 +82,7 @@ export default function Hero() {
 
   function TestimonialCard({ name, role, text }) {
     return (
-      <div className="bg-white p-8 rounded-3xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300">
+      <div className="bg-white p-8 rounded-3xl shadow-md hover:shadow-lg border border-gray-100 transition-all duration-300 border border-gray-100">
         <div className="flex items-center mb-4 gap-3">
           <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl font-bold">
             {name[0]}
@@ -83,12 +106,12 @@ export default function Hero() {
 
   function SectionHeader({ label, title, color, subtitle }) {
     return (
-      <div className="text-center mb-16">
-        <p className={`text-${color}-600 bg-${color}-100 px-6 py-2 rounded-full font-semibold inline-block mb-4`}>
+      <div className="text-center mb-10 transition-all duration-200 hover:-translate-y-1  ">
+        <p className={`text-${color}-600 bg-${color}-100 px-6 py-2 rounded-full font-semibold inline-block  `}>
           {label}
         </p>
 
-        <h2 className="text-4xl font-extrabold text-gray-900 mb-3">
+        <h2 className="text-4xl font-extrabold text-gray-900 mt-5 mb-3">
           {title.split(" ").slice(0, -2).join(" ")}{" "}
           <span className={`text-${color}-600`}>
             {title.split(" ").slice(-2).join(" ")}
@@ -111,49 +134,45 @@ export default function Hero() {
   return (
     <>
 
-      <section className="relative min-h-[90vh] flex items-center px-10 py-20 overflow-hidden rounded-3xl">
+      <section className="relative min-h-[90vh] flex items-center px-10 py-20 overflow-hidden rounded-3xl mt-2   transition duration-300 hover:scale-103 object-cover border border-gray-100">
 
-
-        {images.map((img, i) => (
+        {/* Background Images */}
+        {slideData.map((item, i) => (
           <img
             key={i}
-            src={img}
-            className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity  duration-[1500ms]
-      ${i === index ? "opacity-100" : "opacity-0"}`}
+            src={item.img}
+            className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-[1500ms]
+            ${i === index ? "opacity-100" : "opacity-0"}`}
           />
         ))}
 
-        {/* DARK OVERLAY */}
+        {/* Overlay */}
         <div className="absolute inset-0 bg-black/40"></div>
 
-        {/* 🔥 TOP CENTER BADGE */}
-        <p className="absolute top-20 left-1/2 -translate-x-1/2 z-20
-     text-gray-200 text-lg font-medium bg-white/20 px-6 py-2 rounded-full
-     border border-white/20 shadow-sm backdrop-blur">
+        {/* Tagline */}
+        <p className="absolute top-20 left-1/2 -translate-x-1/2 z-20 text-gray-200 text-lg font-medium bg-white/20 px-6 py-2 rounded-full border border-white/20 shadow-sm backdrop-blur">
           Trusted Financial Partner Since 2009
         </p>
 
-        {/* LEFT SIDE CONTENT */}
-        <div className="relative z-10 ml-5 flex flex-col  text-left max-w-3xl mt-15">
-
+        {/* Text Content */}
+        <div className="relative z-10 ml-5 flex flex-col text-left max-w-3xl mt-15">
           <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-2 leading-tight">
-            Your Trusted Partner In
+            {slideData[index].title}
           </h2>
 
           <h1 className="text-5xl md:text-6xl font-extrabold text-blue-600 mb-6 leading-tight drop-shadow">
-            Wealth Creation
+            {slideData[index].highlight}
           </h1>
 
           <div className="flex flex-wrap gap-5 mb-10">
-
-
-            < Link href="/wealth" className="px-7 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-md transition">
-              Explore Services
+            <Link
+              href={slideData[index].buttonURL}
+              className="px-7 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-700 shadow-md transition"
+            >
+              {slideData[index].buttonText}
             </Link>
           </div>
         </div>
-
-
         <div className="absolute bottom-4 right-5 z-10">
 
           <div className="w-[220px] transition-opacity duration-700">
@@ -175,15 +194,15 @@ export default function Hero() {
           <img
             src="/team1.jpg"
             alt="Financial Team"
-            className="rounded-3xl shadow-2xl w-full h-[480px] object-cover border border-gray-100"
+            className="rounded-3xl shadow-2xl w-full h-[480px] transition duration-500 hover:scale-105 object-cover border border-gray-100"
           />
 
           <div className="absolute bottom-6 right-6 bg-white shadow-lg rounded-2xl px-5 py-3 flex items-center gap-3 border border-gray-100">
             <div className="bg-blue-100 text-blue-600 p-3 rounded-full">
               <i className="fa-solid fa-trophy text-xl"></i>
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-800">15+</h3>
+            <div >
+              <h3 className="text-lg font-bold text-gray-800 ">15+</h3>
               <p className="text-sm text-gray-500">Awards Won</p>
             </div>
           </div>
@@ -210,7 +229,7 @@ export default function Hero() {
           </button>
         </div>
       </section>
-      <section className="text-center py-24 bg-white px-6">
+      <section className="relative bg-white rounded-3xl shadow-md border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all  mb-1 duration-200 text-center p-8 ">
         <SectionHeader
           label="Our Services"
           title="Comprehensive Financial Solutions"
@@ -263,7 +282,7 @@ export default function Hero() {
       </section>
 
 
-      <section className="bg-blue-50 py-20 text-center px-6">
+      <section className="relative  py-16 bg-white rounded-3xl shadow-md border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 text-center p-8">
         <SectionHeader
           label="Testimonials"
           title="What Our Clients Say About Us"
@@ -334,7 +353,7 @@ export default function Hero() {
 
 
 
-      <section className="py-20 px-8 mx-8 bg-gradient-to-r from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-xl mt-20">
+      <section className="py-18 px-8 mx-8 bg-gradient-to-r from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-xl mt-3 mb-2">
         <h2 className="text-4xl font-extrabold mb-4">
           Ready to <span className="text-yellow-300">Grow Your Wealth?</span>
         </h2>

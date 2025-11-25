@@ -2,10 +2,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
+import { usePathname } from "next/navigation";
+
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
+const pathname = usePathname();
 
   return (
     <nav className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
@@ -29,12 +32,12 @@ export default function Navbar() {
         {/* RIGHT — DESKTOP MENU */}
         <div className="hidden lg:flex items-center space-x-8 -mr-20">
 
-          <Link href="/" className="text-gray-700 hover:text-blue-600">Home</Link>
-          <Link href="/about" className="text-gray-700 hover:text-blue-600">About</Link>
-          <Link href="/Services" className="text-gray-700 hover:text-blue-600">Services</Link>
-          <Link href="/Product" className="text-gray-700 hover:text-blue-600">Products</Link>
-          <Link href="/Insurance" className="text-gray-700 hover:text-blue-600">Insurance</Link>
-          <Link href="/financial-planning" className="text-gray-700 hover:text-blue-600">Financial Planning</Link>
+          <Link href="/" className={`relative pb-1 ${pathname === "/" ? "text-blue-600 after:w-full" : "after:w-0"} after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all after:duration-300`}>Home</Link>
+          <Link href="/about" className={`relative pb-1 ${pathname === "/about" ? "text-blue-600 after:w-full" : "after:w-0"} after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all after:duration-300`}>About</Link>
+          <Link href="/Services" className={`relative pb-1 ${pathname === "/Services" ? "text-blue-600 after:w-full" : "after:w-0"} after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all after:duration-300`}>Services</Link>
+          <Link href="/Product" className={`relative pb-1 ${pathname === "/Product" ? "text-blue-600 after:w-full" : "after:w-0"} after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all after:duration-300`}>Products</Link>
+          <Link href="/Insurance" className={`relative pb-1 ${pathname === "/Insurance" ? "text-blue-600 after:w-full" : "after:w-0"} after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all after:duration-300`}>Insurance</Link>
+          <Link href="/financial-planning" className={`relative pb-1 ${pathname === "/financial-planning" ? "text-blue-600 after:w-full" : "after:w-0"} after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all after:duration-300`}>Financial Planning</Link>
 
           {/* DESKTOP DROPDOWN */}
           
@@ -102,8 +105,8 @@ export default function Navbar() {
                   ["Dream-home", "Dream Home"],
                   ["Wealth-Creation", "Wealth Creation"],
                   ["Retiremen", "Retirement"],
-                  ["Child's-Education", "Child's Education"],
-                  ["Child's-Wedding", "Child's Wedding"],
+                  ["Child-Education", "Child's Education"],
+                  ["Child-Wedding", "Child's Wedding"],
                   ["Emergency", "Emergency"],
                   
                 ].map(([url, label], index) => (
@@ -124,11 +127,11 @@ export default function Navbar() {
             </div>
           </div>
 
-          <Link href="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
+          <Link href="/contact" className={`relative pb-1 ${pathname === "/contact" ? "text-blue-600 after:w-full" : "after:w-0"} after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all after:duration-300`}>Contact</Link>
 
           <Link
             href="/login"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+           className={`relative pb-1 ${pathname === "/login" ? "text-blue-600 after:w-full" : "after:w-0"} after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all after:duration-300`}
           >
             Login
           </Link>

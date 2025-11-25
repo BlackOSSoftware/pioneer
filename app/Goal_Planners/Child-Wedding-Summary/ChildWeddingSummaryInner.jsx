@@ -15,7 +15,7 @@ import {
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export default function RecommendedFundsPage() {
+export default function ChildWeddingSummaryInner() {
 
 
     const search = useSearchParams();

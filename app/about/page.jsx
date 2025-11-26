@@ -1,6 +1,6 @@
 export default function About() {
-  
-  function ServiceCard({ icon, color, title, description,className }) {
+
+  function ServiceCard({ icon, color, title, description, className }) {
     return (
       <div className="bg-white p-10 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center relative overflow-hidden group">
 
@@ -38,7 +38,7 @@ export default function About() {
     );
   }
 
-  
+
   function TeamCard({ image, name, role }) {
     return (
       <div className="relative bg-white rounded-3xl shadow-md border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-center p-8">
@@ -58,7 +58,7 @@ export default function About() {
     );
   }
 
-  
+
   return (
     <>
 
@@ -77,13 +77,16 @@ export default function About() {
 
         <div className="absolute inset-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-transparent opacity-80 blur-3xl -z-10"></div>
 
-        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center 
+        <h2
+          className="text-3xl font-bold text-gray-800 mb-6 text-center 
              relative inline-block px-3 py-1 
              bg-gray-100 rounded-md
-             transition-all duration-300 hover:-translate-y-1 ml-115 
-        ">
+             transition-all duration-300 hover:-translate-y-1 mx-auto
+        "
+        >
           Who We Are
         </h2>
+
 
         <div className="grid md:grid-cols-2 gap-8 items-center">
 
@@ -142,8 +145,8 @@ export default function About() {
 
 
       <section className="text-center py-20 bg-white px-6">
-        <SectionHeader  
-        
+        <SectionHeader
+
 
           title=" Our Core Values"
           subtitle="The principles that guide everything we do."

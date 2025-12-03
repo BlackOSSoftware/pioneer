@@ -36,7 +36,7 @@ const formatNum = (num) => {
 };
 
 const SliderMarks = ({ marks }) => (
-  <div className="flex justify-between text-xs text-gray-400 mt-2 px-1">
+  <div className="flex justify-between text-xs text-gray-800 mt-2 px-1">
     {marks.map((m, i) => (
       <div key={i}>{m}</div>
     ))}
@@ -235,7 +235,10 @@ export default function SIPReturnPage() {
     pdf.addImage(bar, "PNG", 30, y, tableW, 200);
 
 
-    pdf.save("Pioneer-SIP-Report.pdf");
+    
+const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
+pdf.save(fileName);
+
   };
 
 
@@ -247,7 +250,9 @@ export default function SIPReturnPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-
+<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
+        
+      </section>
 
       <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
         <div className="max-w-6xl mx-auto text-center px-4">
@@ -484,35 +489,35 @@ export default function SIPReturnPage() {
             <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
               onClick={(e) => e.stopPropagation()} >
 
-              <h2 className="text-lg font-bold mb-4 text-center">Fill Your Details</h2>
+              <h2 className="text-lg font-bold mb-4 text-center text-gray-800">Fill Your Details</h2>
 
               <input type="text" placeholder="Your Name"
-                className="border p-2 rounded w-full mb-3"
+                className="border p-2 rounded w-full mb-3 text-gray-800"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
 
               <input type="email" placeholder="Email Address"
-                className="border p-2 rounded w-full mb-3"
+                className="border p-2 rounded w-full mb-3 text-gray-800 "
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
 
               <input type="number" placeholder="Mobile Number"
-                className="border p-2 rounded w-full mb-3"
+                className="border p-2 rounded w-full mb-3 text-gray-800"
                 value={formData.mobile}
                 onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
               />
 
               <input type="text" placeholder="Your Goal (Ex: Retirement, Child Education)"
-                className="border p-2 rounded w-full mb-3"
+                className="border p-2 rounded w-full mb-3 text-gray-800"
                 value={formData.goal}
                 onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
               />
 
               <button
                 onClick={handleSubmitForm}
-                className="bg-blue-600 text-white w-full p-2 rounded-md"
+                className="bg-blue-600 text-white w-full p-2 rounded-md text-gray-800"
               >
                 Submit & Download PDF
               </button>

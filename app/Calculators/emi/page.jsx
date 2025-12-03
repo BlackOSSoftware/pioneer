@@ -271,7 +271,8 @@ export default function HomeLoanEMIPage() {
             pdf.setFontSize(14).text("Yearly EMI Projection", 30, y - 10);
             pdf.addImage(barImg, "PNG", 30, y, W - 60, 220);
 
-            pdf.save("EMI-Report.pdf");
+            const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
+pdf.save(fileName);
         } catch (err) {
             console.error("PDF generation failed:", err);
             alert("Failed to generate PDF. See console for details.");
@@ -284,7 +285,10 @@ export default function HomeLoanEMIPage() {
 
 
     return (
-        <div className="w-full">
+        <div className="w-full bg-white ">
+<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
+        
+      </section>
 
             <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
                 <div className="max-w-6xl mx-auto text-center px-4">
@@ -321,7 +325,7 @@ export default function HomeLoanEMIPage() {
 
                             <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
 
-                                <label className="block text-sm text-gray-700 mb-2 font-medium">
+                                <label className="block text-[15px] text-gray-800 mb-3 font-semibold">
                                     Home Loan Amount (₹)
                                 </label>
 
@@ -329,7 +333,7 @@ export default function HomeLoanEMIPage() {
                                 <input
                                     type="text"
                                     className="
-        w-full border rounded-xl p-4 pr-12 text-gray-800 text-lg font-semibold
+        w-full border rounded-xl p-3 pr-12 text-gray-800 text-lg font-semibold
         shadow-sm outline-none transition-all duration-300
         group-hover:shadow-lg
       "
@@ -351,8 +355,10 @@ export default function HomeLoanEMIPage() {
 
 
                             <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                                <label className="block text-sm text-gray-700 mb-2">Interest Rate (% per annum)</label>
-                                <input readOnly value={rate} className="w-full bg-white p-3 rounded-md border" />
+                                <label className="block text-[15px] text-gray-800 mb-3 font-semibold">Interest Rate (% per annum)</label>
+                                <input readOnly value={rate} className="w-full border rounded-xl p-3 pr-12 text-gray-800 text-lg font-semibold
+        shadow-sm outline-none transition-all duration-300
+        group-hover:shadow-lg" />
                                 <input
                                     type="range"
                                     min={5}
@@ -360,9 +366,9 @@ export default function HomeLoanEMIPage() {
                                     step={0.1}
                                     value={rate}
                                     onChange={(e) => setRate(Number(e.target.value))}
-                                    className="mt-4 w-full"
+                                    className="w-full "
                                 />
-                                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                                <div className="flex justify-between text-xs text-gray-800 mt-2">
                                     <span>5</span>
                                     <span>7.5</span>
                                     <span>10</span>
@@ -375,7 +381,7 @@ export default function HomeLoanEMIPage() {
 
 
                             <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                                <label className="block text-sm text-gray-700 mb-2">Loan Tenure</label>
+                                <label className="block text-[15px] text-gray-800 mb-3 font-semibold">Loan Tenure</label>
 
                                 <div className="flex items-center gap-4">
                                     <input
@@ -383,19 +389,19 @@ export default function HomeLoanEMIPage() {
                                         min={1}
                                         value={tenure}
                                         onChange={(e) => setTenure(Number(e.target.value))}
-                                        className="p-3 rounded-md border w-32"
+                                        className="p-3 rounded-md text-gray-800 text-lg font-semibold border w-32"
                                     />
                                     <div className="flex items-center gap-3 text-sm">
-                                        <label className="inline-flex items-center">
+                                        <label className="block text-[15px] text-gray-800 mb-3 font-semibold">
                                             <input
                                                 type="radio"
                                                 checked={tenureMode === "years"}
                                                 onChange={() => setTenureMode("years")}
-                                                className="mr-2"
+                                                className="mr-2 "
                                             />
                                             Years
                                         </label>
-                                        <label className="inline-flex items-center">
+                                        <label className="block text-[15px] text-gray-800 mb-3 font-semibold">
                                             <input
                                                 type="radio"
                                                 checked={tenureMode === "months"}
@@ -406,7 +412,7 @@ export default function HomeLoanEMIPage() {
                                         </label>
                                     </div>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">Enter tenure in {tenureMode === "years" ? "years" : "months"}.</p>
+                                <p className="block text-[15px] text-gray-800 mt-2 font-semibold">Enter tenure in {tenureMode === "years" ? "years" : "months"}.</p>
                             </div>
                         </div>
 
@@ -429,21 +435,21 @@ export default function HomeLoanEMIPage() {
                             </div>
 
 
-                            <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
+                            <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-xl shadow-md border border-blue-400">
                                 <div className="space-y-4">
                                     <div className="text-center border-b pb-4">
-                                        <p className="text-sm text-gray-600">Monthly Payment (EMI)</p>
-                                        <p className="text-2xl font-bold text-blue-900 mt-2">{fmt(EMI)}</p>
+                                        <p className="text-blue-100 text-sm mb-3">Monthly Payment (EMI)</p>
+                                        <p className="text-2xl font-bold text-blue-100 mt-2">{fmt(EMI)}</p>
                                     </div>
 
                                     <div className="text-center border-b pb-4 pt-4">
-                                        <p className="text-sm text-gray-600">Total Interest Payable</p>
-                                        <p className="text-2xl font-bold text-blue-900 mt-2">{fmt(totalInterest)}</p>
+                                        <p className="text-sm text-gray-100">Total Interest Payable</p>
+                                        <p className="text-2xl font-bold text-blue-100 mt-2">{fmt(totalInterest)}</p>
                                     </div>
 
                                     <div className="text-center pt-4">
-                                        <p className="text-sm text-gray-600">Total Payment (Principal + Interest)</p>
-                                        <p className="text-2xl font-bold text-blue-900 mt-2">{fmt(totalPayment)}</p>
+                                        <p className="text-sm text-gray-100">Total Payment (Principal + Interest)</p>
+                                        <p className="text-2xl font-bold text-blue-100 mt-2">{fmt(totalPayment)}</p>
                                     </div>
                                 </div>
                             </div>
@@ -452,7 +458,7 @@ export default function HomeLoanEMIPage() {
 
 
                     <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                        <h3 className="text-center text-lg font-semibold mb-4">(EMI) Chart</h3>
+                        <h3 className="text-center text-lg  text-gray-800 font-semibold mb-4">(EMI) Chart</h3>
 
                         <div className="bg-white border rounded-lg p-4">
                             <div className="w-full h-[420px]" ref={barContainerRef}>
@@ -466,13 +472,13 @@ export default function HomeLoanEMIPage() {
                                 <div className="overflow-x-auto">
                                     <table className="min-w-full text-left">
                                         <thead className="bg-[#3B82F6]">
-                                            <tr className="bg-[#3B82F6] text-white p-4 rounded-bl-xl rounded-br-xl" >
-                                                <th className="px-4 py-3"></th>
-                                                <th className="px-4 py-3">Year</th>
-                                                <th className="px-4 py-3">Principal (A)</th>
-                                                <th className="px-4 py-3">Interest (B)</th>
-                                                <th className="px-4 py-3">Total Payment (A + B)</th>
-                                                <th className="px-4 py-3">Balance</th>
+                                            <tr className="bg-[#3B82F6] text-white p-4 rounded-bl-xl rounded-br-xl border-gray-300 border" >
+                                                <th className="px-4  border py-3"></th>
+                                                <th className="px-4 border  py-3">Year</th>
+                                                <th className="px-4  border py-3">Principal (A)</th>
+                                                <th className="px-4 border  py-3">Interest (B)</th>
+                                                <th className="px-4 border py-3">Total Payment (A + B)</th>
+                                                <th className="px-4  border py-3">Balance</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -481,8 +487,8 @@ export default function HomeLoanEMIPage() {
 
                                                 return (
                                                     <React.Fragment key={y.year}>
-                                                        <tr className="border-b bg-white">
-                                                            <td className="px-4 py-4 align-top">
+                                                        <tr className="border-b bg-white text-gray-800 border border-gray-300 ">
+                                                            <td className="px-4 py-4 align-top  text-gray-800">
                                                                 <button
                                                                     onClick={() => toggleYear(y.year)}
                                                                     className="px-3 py-1 rounded-md border text-sm bg-white"
@@ -491,18 +497,18 @@ export default function HomeLoanEMIPage() {
                                                                 </button>
                                                             </td>
 
-                                                            <td className="px-4 py-4 font-semibold">{y.year}</td>
-                                                            <td className="px-4 py-4">{fmt(y.totals.principal)}</td>
-                                                            <td className="px-4 py-4">{fmt(y.totals.interest)}</td>
-                                                            <td className="px-4 py-4">{fmt(y.totals.payment)}</td>
-                                                            <td className="px-4 py-4">{fmt(y.totals.endBalance)}</td>
+                                                            <td className="px-4 py-4 text-gray-800 border  border-gray-300 font-semibold">{y.year}</td>
+                                                            <td className="px-4 py-4 text-gray-800 border  border-gray-300 ">{fmt(y.totals.principal)}</td>
+                                                            <td className="px-4 py-4 text-gray-800 border  border-gray-300 ">{fmt(y.totals.interest)}</td>
+                                                            <td className="px-4 py-4 text-gray-800  border border-gray-300" >{fmt(y.totals.payment)}</td>
+                                                            <td className="px-4 py-4 text-gray-800  border border-gray-300">{fmt(y.totals.endBalance)}</td>
                                                         </tr>
 
                                                         {opened && (
-                                                            <tr className="bg-gray-50">
+                                                            <tr className="bg-gray-50 text-gray-800">
                                                                 <td colSpan={6} className="p-0">
                                                                     {y.months.map((m) => (
-                                                                        <div key={m.idx} className="grid grid-cols-12 gap-2 px-4 py-3 text-sm border-b">
+                                                                        <div key={m.idx} className="grid grid-cols-12 text-gray-800 gap-2 px-4 py-3 text-sm border-b">
                                                                             <div className="col-span-3">{m.monthName}</div>
                                                                             <div className="col-span-3">{fmt(m.principalPart)}</div>
                                                                             <div className="col-span-3">{fmt(m.interestPart)}</div>
@@ -530,35 +536,35 @@ export default function HomeLoanEMIPage() {
                     <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
                         onClick={(e) => e.stopPropagation()}>
 
-                        <h2 className="text-lg font-bold mb-4 text-center">Fill Your Details</h2>
+                        <h2 className="text-lg font-bold mb-4  text-gray-800 text-center">Fill Your Details</h2>
 
                         <input type="text" placeholder="Your Name"
-                            className="border p-2 rounded w-full mb-3"
+                            className="border p-2 rounded w-full mb-3 text-gray-800"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         />
 
                         <input type="email" placeholder="Email Address"
-                            className="border p-2 rounded w-full mb-3"
+                            className="border p-2 rounded w-full mb-3 text-gray-800"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         />
 
                         <input type="number" placeholder="Mobile Number"
-                            className="border p-2 rounded w-full mb-3"
+                            className="border p-2 rounded w-full mb-3 text-gray-800"
                             value={formData.mobile}
                             onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                         />
 
                         <input type="text" placeholder="Your Goal (Ex: Retirement, Child Education)"
-                            className="border p-2 rounded w-full mb-3"
+                            className="border p-2 rounded w-full mb-3 text-gray-800"
                             value={formData.goal}
                             onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
                         />
 
                         <button
                             onClick={handleSubmitForm}
-                            className="bg-blue-600 text-white w-full p-2 rounded-md"
+                            className="bg-blue-600 text-white w-full p-2 rounded-md text-gray-800"
                         >
                             Submit & Download PDF
                         </button>

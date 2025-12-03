@@ -127,8 +127,11 @@ export default function MutualFunds() {
 
   // ---------- MAIN RETURN ----------
   return (
-    <>
-      
+    <div className="bg-white">
+      <section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
+        
+      </section>
+
       <section className="py-20 px-6 mx-6 md:mx-12 mt-5 bg-gradient-to-r from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg mb-16 pb-5 pt-5">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
           Mutual <span className="text-yellow-300">Funds</span>
@@ -231,6 +234,6 @@ export default function MutualFunds() {
           ))}
         </div>
       </section>
-    </>
+    </div>
   );
 }

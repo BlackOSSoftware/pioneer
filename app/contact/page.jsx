@@ -50,6 +50,9 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
+        
+      </section>
 
       <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Get In <span className="text-yellow-300"> Touch</span></h1>

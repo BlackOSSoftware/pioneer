@@ -274,12 +274,15 @@ export default function StepUpSIPCalculatorPage() {
     y += 12;
     pdf.addImage(bar, "PNG", 30, y, W - 60, 220);
 
-    pdf.save("Pioneer-SIP-StepUp-Report.pdf");
+    const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
+pdf.save(fileName);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-
+<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
+        
+      </section>
       <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
         <div className="max-w-6xl mx-auto text-center px-4">
           <h1 className="text-4xl font-semibold text-white-900 mb-2">
@@ -310,7 +313,7 @@ export default function StepUpSIPCalculatorPage() {
               <input
                 type="text"
                 className="
-        w-full border rounded-xl p-4 pr-12
+        w-full border rounded-xl p-3 mb-2 pr-12
         text-gray-800 text-lg font-semibold
         shadow-sm outline-none transition-all duration-300
         group-hover:shadow-lg
@@ -335,20 +338,29 @@ export default function StepUpSIPCalculatorPage() {
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <label className="block text-gray-700 mb-2 font-medium">How many years will you continue the SIP?</label>
-              <input type="number" className="w-full border rounded p-3 mb-3" value={years} onChange={(e) => setYears(Number(e.target.value || 0))} />
+              <label className="block text-[15px] text-gray-800 mb-3 font-semibold">How many years will you continue the SIP?</label>
+              <input type="number" className="w-full border rounded-xl p-3 mb-3 pr-12
+        text-gray-800 text-lg font-semibold
+        shadow-sm outline-none transition-all duration-300
+        group-hover:shadow-lg" value={years} onChange={(e) => setYears(Number(e.target.value || 0))} />
               <input type="range" min={1} max={40} step={1} value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full" />
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <label className="block text-gray-700 mb-2 font-medium">What rate of return do you expect? (% p.a.)</label>
-              <input type="number" className="w-full border rounded p-3 mb-3" value={annualReturn} onChange={(e) => setAnnualReturn(Number(e.target.value || 0))} />
+              <label className="block text-[15px] text-gray-800 mb-3 font-semibold">What rate of return do you expect? (% p.a.)</label>
+              <input type="number" className="w-full border rounded-xl p-3 pr-12
+        text-gray-800 text-lg font-semibold mb-3
+        shadow-sm outline-none transition-all duration-300
+        group-hover:shadow-lg" value={annualReturn} onChange={(e) => setAnnualReturn(Number(e.target.value || 0))} />
               <input type="range" min={0} max={30} step={0.1} value={annualReturn} onChange={(e) => setAnnualReturn(Number(e.target.value))} className="w-full" />
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <label className="block text-gray-700 mb-2 font-medium">What percentage step up monthly SIP? (% per year)</label>
-              <input type="number" className="w-full border rounded p-3 mb-3" value={stepUp} onChange={(e) => setStepUp(Number(e.target.value || 0))} />
+              <label className="block text-[15px] text-gray-800 mb-3 font-semibold">What percentage step up monthly SIP? (% per year)</label>
+              <input type="number" className="w-full border rounded-xl p-3 pr-12
+        text-gray-800 text-lg font-semibold
+        shadow-sm outline-none transition-all duration-300 mb-3
+        group-hover:shadow-lg" value={stepUp} onChange={(e) => setStepUp(Number(e.target.value || 0))} />
               <input type="range" min={0} max={60} step={0.1} value={stepUp} onChange={(e) => setStepUp(Number(e.target.value))} className="w-full" />
             </div>
           </div>
@@ -357,7 +369,7 @@ export default function StepUpSIPCalculatorPage() {
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <div className="flex justify-between items-center mb-2">
-                <h4 className="font-medium text-gray-700">Break-up of Total Payment</h4>
+                <h4 className="block text-[15px] text-gray-800 mb-3 font-semibold">Break-up of Total Payment</h4>
                 <button
                   onClick={() => setShowForm(true)}
                   className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium shadow-md hover:bg-blue-700"
@@ -392,7 +404,7 @@ export default function StepUpSIPCalculatorPage() {
         </div>
 
 
-        <section className="mt-8 bg-white p-6 rounded-xl shadow-sm">
+        <section className="mt-8 bg-white p-6 rounded-xl shadow-sm text-gray-800 ">
           <h3 className="font-semibold mb-3 text-center">Projected SIP Growth</h3>
           <div className="max-w-4xl mx-auto">
             <Bar ref={barRef} data={growthData} />
@@ -402,7 +414,7 @@ export default function StepUpSIPCalculatorPage() {
 
 
         <section className="mt-8 bg-white p-6 rounded-xl shadow-sm">
-          <h3 className="font-semibold mb-4 text-xl">
+          <h3 className="font-semibold text-gray-800 mb-4 text-xl">
             SIP Calculator Step Up Amount Invested Summary
           </h3>
 
@@ -411,7 +423,7 @@ export default function StepUpSIPCalculatorPage() {
 
 
               <thead>
-                <tr className="bg-[#3B82F6] text-white border border-gray-300">
+                <tr className="bg-[#3B82F6] text-white border border-gray-600">
                   <th className="px-4 py-3 border border-gray-300">Year</th>
                   <th className="px-4 py-3 border border-gray-300">SIP Amount / Month</th>
                   <th className="px-4 py-3 border border-gray-300">Invested Amount / Year</th>
@@ -432,23 +444,23 @@ export default function StepUpSIPCalculatorPage() {
                       key={index}
                       className="border border-gray-300"
                     >
-                      <td className="px-4 py-3 border border-gray-300">
+                      <td className="px-4 py-3 border  text-gray-800 border-gray-300">
                         {`Year${row.year}`}
                       </td>
 
-                      <td className="px-4 py-3 border border-gray-300">
+                      <td className="px-4 py-3 border  text-gray-800 border-gray-300">
                         {formatNum(Math.round(row.sipMonthly))}
                       </td>
 
-                      <td className="px-4 py-3 border border-gray-300">
+                      <td className="px-4 py-3  text-gray-800 border border-gray-300">
                         {formatNum(Math.round(row.investedYear))}
                       </td>
 
-                      <td className="px-4 py-3 border border-gray-300">
+                      <td className="px-4 py-3  text-gray-800 border border-gray-300">
                         {formatNum(Math.round(cumulative))}
                       </td>
 
-                      <td className="px-4 py-3 border border-gray-300">
+                      <td className="px-4 py-3  text-gray-800 border border-gray-300">
                         {formatNum(Math.round(row.valueAtYearEnd))}
                       </td>
                     </tr>
@@ -501,38 +513,38 @@ export default function StepUpSIPCalculatorPage() {
         {showForm && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/40 bg-opacity-50 z-50 "
             onClick={() => setShowForm(false)}>
-            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
+            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md  text-gray-800"
               onClick={(e) => e.stopPropagation()} >
 
               <h2 className="text-lg font-bold mb-4 text-center">Fill Your Details</h2>
 
               <input type="text" placeholder="Your Name"
-                className="border p-2 rounded w-full mb-3"
+                className="border p-2 rounded w-full mb-3  text-gray-800"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
 
               <input type="email" placeholder="Email Address"
-                className="border p-2 rounded w-full mb-3"
+                className="border p-2 rounded w-full mb-3  text-gray-800"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
 
               <input type="number" placeholder="Mobile Number"
-                className="border p-2 rounded w-full mb-3"
+                className="border p-2 rounded w-full mb-3  text-gray-800"
                 value={formData.mobile}
                 onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
               />
 
               <input type="text" placeholder="Your Goal (Ex: Retirement, Child Education)"
-                className="border p-2 rounded w-full mb-3"
+                className="border p-2 rounded w-full mb-3 text-gray-800"
                 value={formData.goal}
                 onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
               />
 
               <button
                 onClick={handleSubmitForm}
-                className="bg-blue-600 text-white w-full p-2 rounded-md"
+                className="bg-blue-600 text-white w-full p-2 rounded-md  text-gray-800"
               >
                 Submit & Download PDF
               </button>

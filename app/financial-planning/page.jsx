@@ -31,7 +31,10 @@ export default function FinancialPlanningPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-    
+    <section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
+        
+      </section>
+
       <div className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
         
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
@@ -183,7 +186,7 @@ export default function FinancialPlanningPage() {
       </section>
 
       
-      <section className="max-w-6xl mx-auto mt-10 bg-white border   border-gray-200 rounded-2xl shadow-lg p-10 mb-10">
+      <section className="max-w-6xl mx-auto mt-6 bg-white border   border-gray-200 rounded-2xl shadow-lg p-10 ">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
         
           <div>
@@ -228,7 +231,7 @@ export default function FinancialPlanningPage() {
           </div>
 
          
-          <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 shadow-inner transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ">
+          <div className="bg-gray-50 border border-gray-200 rounded-2xl  p-8 shadow-inner transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ">
             <form className="space-y-5">
               <div>
                 <label className="block text-gray-700 font-medium mb-2">

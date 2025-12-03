@@ -60,7 +60,11 @@ export default function About() {
 
 
   return (
-    <>
+    <div className="bg-white">
+      <section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
+        
+      </section>
+
 
       <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pb-5 pt-5">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4 drop-shadow-md">
@@ -191,6 +195,6 @@ export default function About() {
           <TeamCard image="/item44.jpg" name="Sneha Reddy" role="Tax Consultant" />
         </div>
       </section>
-    </>
+    </div>
   );
 }

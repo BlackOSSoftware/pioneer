@@ -1,14 +1,21 @@
+import Image from "next/image";
 export default function Footer() {
   return (
-    <footer className="bg-[#e9f4ff] shadow-[0_-6px_20px_rgba(0,0,0,0.2)] rounded-t-2xl text-gray-700 pt-16 pb-8 px-6">
+    <footer className="bg-[#e9f4ff]  text-gray-700 pt-16 pb-8 ">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 max-w-6xl mx-auto border-b border-gray-200 pb-10">
         
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <div className="bg-blue-600 text-white w-8 h-8 flex items-center justify-center rounded-lg font-bold text-lg">
-              P
-            </div>
-            <h2 className="text-xl font-bold text-gray-800">Pioneer Wealth</h2>
+            <Image
+                  src="/newlogo.png" 
+                  alt="Pioneer Wealth Solutions Logo"
+                  width={100}
+                  height={110}
+                  priority
+                  className="object-contain drop-shadow-sm"
+                
+              />
+          
           </div>
           <p className="text-gray-500 text-sm mb-4">
             Your trusted partner in wealth creation, offering expert financial

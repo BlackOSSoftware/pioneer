@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -10,7 +11,7 @@ export default function Navbar() {
   const [plannerOpen, setPlannerOpen] = useState(false);
 
   const rawPath = usePathname();
-  const pathname = (rawPath ?? "/").toLowerCase();
+  const pathname = (rawPath ?? "/");
 
   const handleCloseAll = () => {
     setMenuOpen(false);
@@ -19,24 +20,41 @@ export default function Navbar() {
   };
 
   return (
-    <>
-      <nav className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50 text-gray-900">
-        <div className="max-w-7xl mx-auto flex items-center px-6 py-3">
+    <div >
+<nav className="
+  fixed top-0 left-0 right-0 z-50
+  bg-white/3
+  backdrop-blur-md
+  
+  text-white
+">
+
+
+
+
+
+        <div className="max-w-7xl mx-auto flex items-center px-6 py-3 ml-2">
 
           {/* LOGO */}
-          <div className="flex-shrink-0 ml-2">
+          <div className="flex-shrink-0 -ml-3">
             <Link href="/" onClick={handleCloseAll} className="flex items-center gap-2">
-              <div className="bg-blue-600 text-white font-bold w-8 h-8 rounded-lg flex items-center justify-center text-lg">
-                P
-              </div>
-              <span className="text-lg font-semibold text-gray-900">Pioneer Wealth</span>
+              <Image
+      src="/newlogo.png" // rename this uploaded image as logopo.png in /public
+      alt="Pioneer Wealth Solutions Logo"
+      width={180}
+      height={190}
+      priority
+      className="object-contain drop-shadow-sm"
+    
+  />
+              
             </Link>
           </div>
 
           <div className="flex-grow"></div>
 
           {/* DESKTOP MENU */}
-          <div className="hidden lg:flex items-center space-x-8 -mr-20">
+          <div className="hidden lg:flex items-center space-x-6 -mr-40">
 
             {[
               ["/", "Home"],
@@ -47,31 +65,55 @@ export default function Navbar() {
               ["/financial-planning", "Financial Planning"],
             ].map(([url, label]) => (
               <Link
-                key={url}
-                href={url}
-                className={`relative pb-1 ${
-                  pathname === url ? "text-blue-600 after:w-full" : "text-gray-900 after:w-0"
-                } after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all`}
-              >
-                {label}
-              </Link>
+  key={url}
+  href={url}
+  className={`
+    relative flex items-center 
+    transition-all duration-300 cursor-pointer
+
+    ${pathname === url
+      ? "text-blue-600  after:w-full"
+      : "text-black hover:text-blue-600  after:w-0"
+    }
+
+    after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all
+    hover:after:w-full
+  `}
+>
+  {label}
+</Link>
+
             ))}
 
             {/* DESKTOP - CALCULATORS */}
             <div className="relative">
               <div
-                className="flex items-center cursor-pointer text-gray-900 hover:text-blue-600"
-                onClick={() => {
-                  setCalcOpen(!calcOpen);
-                  setPlannerOpen(false);
-                }}
-              >
-                Calculators
-                <ChevronDown size={18} className={`ml-1 transition ${calcOpen ? "rotate-180" : ""}`} />
-              </div>
+  className={`
+    relative flex items-center cursor-pointer transition-all duration-300  space-x-6
+    ${pathname.includes("calculators")
+      ? "text-blue-600  after:w-full"
+      : "text-black hover:text-blue-600  after:w-0"
+    }
+    after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all hover:after:w-full
+  `}
+  onClick={() => {
+    setCalcOpen(!calcOpen);
+    setPlannerOpen(false);  // close planner
+  }}
+>
+  Calculators
+  <ChevronDown
+    size={18}
+    className={`ml-1 transition ${calcOpen ? "rotate-180" : ""}`}
+  />
+</div>
+
+  
+
+
 
               {calcOpen && (
-                <div className="absolute bg-white shadow-xl mt-2 w-80 border border-gray-300 rounded-md z-50">
+                <div className="absolute bg-white text-black shadow-xl mt-2 w-80 border border-gray-300 rounded-md z-50">
                   <ul className="py-2 text-[15px] max-h-[300px] overflow-auto">
                     {[
                       ["sip-return", "SIP Return Calculator"],
@@ -107,18 +149,30 @@ export default function Navbar() {
             {/* DESKTOP - GOAL PLANNERS */}
             <div className="relative">
               <div
-                className="flex items-center cursor-pointer text-gray-900 hover:text-blue-600"
-                onClick={() => {
-                  setPlannerOpen(!plannerOpen);
-                  setCalcOpen(false);
-                }}
-              >
-                Goal Planners
-                <ChevronDown size={18} className={`ml-1 transition ${plannerOpen ? "rotate-180" : ""}`} />
-              </div>
+  className={`
+    relative flex items-center cursor-pointer transition-all duration-300 space-x-6
+    ${pathname.includes("goal_planners")
+      ? "text-blue-600  after:w-full"
+      : "text-black hover:text-blue-600  after:w-0"
+    }
+    after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all hover:after:w-full
+  `}
+  onClick={() => {
+    setPlannerOpen(!plannerOpen);
+    setCalcOpen(false); // close calculators
+  }}
+>
+  Goal Planners
+  <ChevronDown
+    size={18}
+    className={`ml-1 transition ${plannerOpen ? "rotate-180" : ""}`}
+  />
+</div>
+
+
 
               {plannerOpen && (
-                <div className="absolute bg-white shadow-xl mt-2 w-80 border border-gray-300 rounded-md z-50">
+                <div className="absolute bg-white shadow-xl mt-2 w-80 border text-black border-gray-300 rounded-md z-50">
                   <ul className="py-2 text-[15px]">
                     {[
                       ["Dream-home", "Dream Home"],
@@ -144,19 +198,38 @@ export default function Navbar() {
             </div>
 
             <Link
-              href="/contact"
-              className={`pb-1 ${
-                pathname === "/contact" ? "text-blue-600 after:w-full" : "text-gray-900 after:w-0"
-              } relative after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all`}
-            >
-              Contact
-            </Link>
+  href="/contact"
+  className={`
+    relative flex items-center 
+    transition-all duration-300 cursor-pointer space-x-6
+
+    ${pathname === "/contact"
+      ? "text-blue-600  after:w-full"
+      : "text-black hover:text-blue-600  after:w-0"
+    }
+
+    after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all
+    hover:after:w-full
+  `}
+>
+  Contact
+</Link>
+
 
             <Link
               href="/login"
-              className={`pb-1 ${
-                pathname === "/login" ? "text-blue-600 after:w-full" : "text-gray-900 after:w-0"
-              } relative after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all`}
+              className={`
+    relative flex items-center 
+    transition-all duration-300 cursor-pointer space-x-6
+
+    ${pathname === "/login"
+      ? "text-blue-600  after:w-full"
+      : "text-black hover:text-blue-600  after:w-0"
+    }
+
+    after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all
+    hover:after:w-full
+  `}
             >
               Login
             </Link>
@@ -172,9 +245,10 @@ export default function Navbar() {
 
       {/* MOBILE MENU */}
       {menuOpen && (
-        <div className="lg:hidden bg-white shadow-md border-t animate-fadeIn max-h-[80vh] overflow-y-auto mt-[64px]">
+      <div className="lg:hidden bg-white shadow-md border-t text-black animate-fadeIn max-h-[90vh] overflow-y-auto mt-22">
+
           <div className="flex flex-col items-center py-4 space-y-3">
-            <Link href="/" onClick={handleCloseAll}>Home</Link>
+            <Link href="/" onClick={handleCloseAll} className="text-black">Home</Link>
             <Link href="/about" onClick={handleCloseAll}>About</Link>
             <Link href="/Services" onClick={handleCloseAll}>Services</Link>
             <Link href="/Product" onClick={handleCloseAll}>Products</Link>
@@ -245,6 +319,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -20,13 +20,7 @@ export default function Hero() {
       buttonText: "Begin Your Dream Home Plan →",
       buttonURL: "/Goal_Planners/Dream-home"
     },
-    {
-      img: "/bg/bg3.jpg",
-      title: "Plan For A Better Tomorrow",
-      highlight: "Retirement Planning",
-      buttonText: "Plan Retirement →",
-      buttonURL: "/Goal_Planners/Retirement"
-    },
+    
     {
       img: "/bg/bg4.jpg",
       title: "Build A Strong Future With",
@@ -41,7 +35,7 @@ export default function Hero() {
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % slideData.length);
-    }, 3500);
+    }, 2500);
     return () => clearInterval(interval);
   }, []);
 
@@ -132,9 +126,9 @@ export default function Hero() {
   // -------------------- MAIN RETURN --------------------
 
   return (
-    <>
+    <div className="bg-white">
 
-      <section className="relative min-h-[90vh] flex items-center px-10 py-20 overflow-hidden rounded-3xl    transition duration-300 hover:scale-103 object-cover border border-gray-100">
+      <section className="relative min-h-[96vh] flex items-center px-10 py-20 overflow-hidden rounded-3xl -mt-9  transition duration-300 hover:scale-101 object-cover border border-gray-100">
 
         {/* Background Images */}
         {slideData.map((item, i) => (
@@ -150,7 +144,7 @@ export default function Hero() {
         <div className="absolute inset-0 bg-black/40"></div>
 
         
-        <p className="absolute top-20 left-1/2 -translate-x-1/2 z-20 text-gray-200 text-lg font-medium bg-white/20 px-6 py-2 rounded-full border border-white/20 shadow-sm -mt-8 backdrop-blur">
+        <p className="absolute top-20 left-1/2 -translate-x-1/2 z-20 text-gray-200 text-lg font-medium bg-white/20 px-6 py-2 rounded-full shadow-sm mt-6 backdrop-blur">
           Trusted Financial Partner Since 2009
         </p>
 
@@ -353,7 +347,7 @@ export default function Hero() {
 
 
 
-      <section className="py-18 px-8 mx-8 bg-gradient-to-r from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-xl mt-3 mb-2">
+      <section className="py-18 px-8 mx-8 bg-gradient-to-r from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-xl mt-1">
         <h2 className="text-4xl font-extrabold mb-4">
           Ready to <span className="text-yellow-300">Grow Your Wealth?</span>
         </h2>
@@ -366,9 +360,11 @@ export default function Hero() {
           <button className="bg-white text-blue-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 shadow-md transition">
             Get Started Today →
           </button>
-          <button className="border border-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-700 transition">
-            Contact Us
-          </button>
+          <Link href="/contact">
+  <button className="border border-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-700 transition">
+    Contact Us
+  </button>
+</Link>
         </div>
 
         <div className="flex flex-wrap justify-center gap-12 text-blue-100 text-sm">
@@ -386,6 +382,6 @@ export default function Hero() {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }

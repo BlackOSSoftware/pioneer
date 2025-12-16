@@ -1,9 +1,26 @@
+import Sidebar from "./components/Sidebar";
+import Topbar from "./components/Topbar";
+
 export default function AdminLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="bg-gray-50 flex flex-col min-h-screen">
-        {children}
-      </body>
-    </html>
+    <div className="flex">
+
+      {/* SIDEBAR */}
+      <Sidebar />
+
+      {/* MAIN AREA */}
+      <div className="ml-64 w-full min-h-screen bg-[var(--background)]">
+
+        {/* TOPBAR */}
+        <Topbar />
+
+        {/* PAGE CONTENT */}
+        <main className=" pt-16 p-6 min-h-screen bg-gray-50 dark:bg-slate-950">
+  {children}
+</main>
+
+         
+      </div>
+    </div>
   );
 }

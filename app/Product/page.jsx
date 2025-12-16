@@ -148,13 +148,13 @@ export default function MutualFunds() {
           placeholder="Search mutual funds..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          className="flex-1 border border-gray-300 rounded-xl text-black px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
         />
 
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-gray-300 text-black rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option>All</option>
           <option>Equity</option>
@@ -165,7 +165,7 @@ export default function MutualFunds() {
         <select
           value={fundHouseFilter}
           onChange={(e) => setFundHouseFilter(e.target.value)}
-          className="border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-gray-300 rounded-xl px-4 py-3 text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option>All</option>
           <option>HDFC MF</option>

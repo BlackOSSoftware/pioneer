@@ -85,7 +85,7 @@ export default function ContactPage() {
       <div className="border-t border-gray-200 my-12 w-10/12 mx-auto"></div>
 
 
-      <section className="max-w-6xl mx-auto mb-20 px-6">
+      <section className="max-w-6xl mx-auto  px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
 
           <div>

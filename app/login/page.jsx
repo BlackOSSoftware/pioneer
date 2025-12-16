@@ -101,7 +101,7 @@ export default function LoginPage() {
         <div className="flex mb-6 bg-gray-100 rounded-xl p-1">
           <button
             onClick={() => setActiveTab("login")}
-            className={`w-1/2 py-2 rounded-lg font-medium transition-all ${
+            className={`w-full py-2 rounded-lg font-medium transition-all ${
               activeTab === "login"
                 ? "bg-white text-blue-600 shadow-sm"
                 : "text-gray-600 hover:text-blue-600"
@@ -109,16 +109,7 @@ export default function LoginPage() {
           >
             Login
           </button>
-          <button
-            onClick={() => setActiveTab("register")}
-            className={`w-1/2 py-2 rounded-lg font-medium transition-all ${
-              activeTab === "register"
-                ? "bg-white text-blue-600 shadow-sm"
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-          >
-            Register
-          </button>
+          
         </div>
 
         {/* ================= LOGIN FORM ================= */}
@@ -143,7 +134,7 @@ export default function LoginPage() {
                     type="email"
                     placeholder="your.email@example.com"
                     required
-                    className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full border border-gray-300 text-black  rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -159,7 +150,7 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     required
-                    className="w-full border border-gray-300 rounded-lg pl-10 pr-10 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full border  text-black border-gray-300 rounded-lg pl-10 pr-10 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   <div
                     className="absolute right-3 top-3 cursor-pointer text-gray-400 hover:text-gray-600"
@@ -197,15 +188,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            <p className="text-center text-sm text-gray-500 mt-6">
-              Don’t have an account?{" "}
-              <button
-                onClick={() => setActiveTab("register")}
-                className="text-blue-600 hover:underline"
-              >
-                Register now
-              </button>
-            </p>
+            
           </>
         )}
 
@@ -229,7 +212,7 @@ export default function LoginPage() {
                   type="text"
                   placeholder="Enter your full name"
                   required
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full border border-gray-300  text-black rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
@@ -241,11 +224,15 @@ export default function LoginPage() {
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
                   <input
-                    type="email"
-                    placeholder="your.email@example.com"
-                    required
-                    className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
+  type="email"
+  placeholder="your.email@example.com"
+  className="
+    w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2
+    text-black
+    focus:ring-2 focus:ring-blue-500 focus:outline-none
+  "
+/>
+
                 </div>
               </div>
 
@@ -260,7 +247,7 @@ export default function LoginPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
                     required
-                    className="w-full border border-gray-300 rounded-lg pl-10 pr-10 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full border border-gray-300  text-black rounded-lg pl-10 pr-10 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   <div
                     className="absolute right-3 top-3 cursor-pointer text-gray-400 hover:text-gray-600"

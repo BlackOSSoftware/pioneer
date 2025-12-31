@@ -21,7 +21,7 @@ export default function Navbar() {
 
   return (
     <div >
-<nav className="
+      <nav className="
   fixed top-0 left-0 right-0 z-50
   bg-white/3
   backdrop-blur-md
@@ -39,15 +39,15 @@ export default function Navbar() {
           <div className="flex-shrink-0 -ml-3">
             <Link href="/" onClick={handleCloseAll} className="flex items-center gap-2">
               <Image
-      src="/newlogo.png" // rename this uploaded image as logopo.png in /public
-      alt="Pioneer Wealth Solutions Logo"
-      width={180}
-      height={190}
-      priority
-      className="object-contain drop-shadow-sm"
-    
-  />
-              
+                src="/newlogo.png" // rename this uploaded image as logopo.png in /public
+                alt="Pioneer Wealth Solutions Logo"
+                width={180}
+                height={190}
+                priority
+                className="object-contain drop-shadow-sm"
+
+              />
+
             </Link>
           </div>
 
@@ -65,50 +65,50 @@ export default function Navbar() {
               ["/financial-planning", "Financial Planning"],
             ].map(([url, label]) => (
               <Link
-  key={url}
-  href={url}
-  className={`
+                key={url}
+                href={url}
+                className={`
     relative flex items-center 
     transition-all duration-300 cursor-pointer
 
     ${pathname === url
-      ? "text-blue-600  after:w-full"
-      : "text-black hover:text-blue-600  after:w-0"
-    }
+                    ? "text-blue-600  after:w-full"
+                    : "text-black hover:text-blue-600  after:w-0"
+                  }
 
     after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all
     hover:after:w-full
   `}
->
-  {label}
-</Link>
+              >
+                {label}
+              </Link>
 
             ))}
 
             {/* DESKTOP - CALCULATORS */}
             <div className="relative">
               <div
-  className={`
+                className={`
     relative flex items-center cursor-pointer transition-all duration-300  space-x-6
     ${pathname.includes("calculators")
-      ? "text-blue-600  after:w-full"
-      : "text-black hover:text-blue-600  after:w-0"
-    }
+                    ? "text-blue-600  after:w-full"
+                    : "text-black hover:text-blue-600  after:w-0"
+                  }
     after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all hover:after:w-full
   `}
-  onClick={() => {
-    setCalcOpen(!calcOpen);
-    setPlannerOpen(false);  // close planner
-  }}
->
-  Calculators
-  <ChevronDown
-    size={18}
-    className={`ml-1 transition ${calcOpen ? "rotate-180" : ""}`}
-  />
-</div>
+                onClick={() => {
+                  setCalcOpen(!calcOpen);
+                  setPlannerOpen(false);  // close planner
+                }}
+              >
+                Calculators
+                <ChevronDown
+                  size={18}
+                  className={`ml-1 transition ${calcOpen ? "rotate-180" : ""}`}
+                />
+              </div>
 
-  
+
 
 
 
@@ -149,25 +149,25 @@ export default function Navbar() {
             {/* DESKTOP - GOAL PLANNERS */}
             <div className="relative">
               <div
-  className={`
+                className={`
     relative flex items-center cursor-pointer transition-all duration-300 space-x-6
     ${pathname.includes("goal_planners")
-      ? "text-blue-600  after:w-full"
-      : "text-black hover:text-blue-600  after:w-0"
-    }
+                    ? "text-blue-600  after:w-full"
+                    : "text-black hover:text-blue-600  after:w-0"
+                  }
     after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all hover:after:w-full
   `}
-  onClick={() => {
-    setPlannerOpen(!plannerOpen);
-    setCalcOpen(false); // close calculators
-  }}
->
-  Goal Planners
-  <ChevronDown
-    size={18}
-    className={`ml-1 transition ${plannerOpen ? "rotate-180" : ""}`}
-  />
-</div>
+                onClick={() => {
+                  setPlannerOpen(!plannerOpen);
+                  setCalcOpen(false); // close calculators
+                }}
+              >
+                Goal Planners
+                <ChevronDown
+                  size={18}
+                  className={`ml-1 transition ${plannerOpen ? "rotate-180" : ""}`}
+                />
+              </div>
 
 
 
@@ -198,22 +198,22 @@ export default function Navbar() {
             </div>
 
             <Link
-  href="/contact"
-  className={`
+              href="/contact"
+              className={`
     relative flex items-center 
     transition-all duration-300 cursor-pointer space-x-6
 
     ${pathname === "/contact"
-      ? "text-blue-600  after:w-full"
-      : "text-black hover:text-blue-600  after:w-0"
-    }
+                  ? "text-blue-600  after:w-full"
+                  : "text-black hover:text-blue-600  after:w-0"
+                }
 
     after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all
     hover:after:w-full
   `}
->
-  Contact
-</Link>
+            >
+              Contact
+            </Link>
 
 
             <Link
@@ -223,9 +223,9 @@ export default function Navbar() {
     transition-all duration-300 cursor-pointer space-x-6
 
     ${pathname === "/login"
-      ? "text-blue-600  after:w-full"
-      : "text-black hover:text-blue-600  after:w-0"
-    }
+                  ? "text-blue-600  after:w-full"
+                  : "text-black hover:text-blue-600  after:w-0"
+                }
 
     after:absolute after:left-0 after:bottom-0 after:h-[2px] after:bg-blue-600 after:transition-all
     hover:after:w-full
@@ -245,7 +245,7 @@ export default function Navbar() {
 
       {/* MOBILE MENU */}
       {menuOpen && (
-      <div className="lg:hidden bg-white shadow-md border-t text-black animate-fadeIn max-h-[90vh] overflow-y-auto mt-22">
+        <div className="lg:hidden bg-white shadow-md border-t text-black animate-fadeIn max-h-[90vh] overflow-y-auto mt-22">
 
           <div className="flex flex-col items-center py-4 space-y-3">
             <Link href="/" onClick={handleCloseAll} className="text-black">Home</Link>

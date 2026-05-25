@@ -12,6 +12,7 @@ import {
   BarElement,
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 ChartJS.register(
   ArcElement,
@@ -135,7 +136,7 @@ export default function CompositeFinancialGoalCalculator() {
     const barCanvas = getCanvas(barRef);
 
     if (!pieCanvas || !barCanvas) {
-      alert("Please wait... charts not ready.");
+      showAppModal("Please wait... charts not ready.");
       return;
     }
 
@@ -224,7 +225,7 @@ export default function CompositeFinancialGoalCalculator() {
     const { name, email, mobile, goal } = formData;
 
     if (!name || !email || !mobile || !goal) {
-      alert("Please fill all details");
+      showAppModal("Please fill all details");
       return;
     }
 

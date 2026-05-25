@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { VisitingCardLead } from "@/models/VisitingCardLead";
+import { isAdminRequest, adminUnauthorized } from "@/lib/admin-auth";
 
 const phoneRegex = /^[0-9+\-\s()]{7,20}$/;
 
@@ -32,7 +33,9 @@ export async function POST(req) {
       companyName: body?.companyName || "Pioneer Wealth",
       subtitle: body?.subtitle || "Financial Planning & Mutual Funds",
       companyPhone: body?.companyPhone || "+91 98765 43210",
-      source: "Visiting Card Page",
+      source: body?.source?.trim() || "Admin Visiting Card Studio",
+      shareToken: body?.shareToken?.trim() || "",
+      cardAdvisorName: body?.cardAdvisorName?.trim() || "",
     });
 
     return NextResponse.json({ success: true, lead }, { status: 201 });
@@ -46,6 +49,7 @@ export async function POST(req) {
 }
 
 export async function GET() {
+  if (!(await isAdminRequest())) return adminUnauthorized();
   try {
     await connectDB();
     const leads = await VisitingCardLead.find().sort({ createdAt: -1 });
@@ -60,6 +64,7 @@ export async function GET() {
 }
 
 export async function DELETE(req) {
+  if (!(await isAdminRequest())) return adminUnauthorized();
   try {
     await connectDB();
     const id = req.nextUrl.searchParams.get("id");

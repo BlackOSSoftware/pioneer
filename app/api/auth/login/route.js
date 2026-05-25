@@ -22,10 +22,12 @@ export async function POST(req) {
 
 
         const cookieStore = await cookies();
+        // sameSite "none" requires secure:true; browsers reject None+insecure, so the cookie never saved.
+        // "lax" works for same-site admin + login on localhost and normal HTTPS deployments.
         cookieStore.set("token", "adminToken", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
+            sameSite: "lax",
             path: "/",
             maxAge: 60 * 60 * 24,
         });

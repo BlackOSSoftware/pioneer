@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 export default function WealthCreationPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function WealthCreationPage() {
 
   const handleSubmit = () => {
     if (!age || !amount || !afterYears || !inflation || !returns) {
-      alert("Please fill all fields");
+      showAppModal("Please fill all fields", { variant: "info", title: "Required fields" });
       return;
     }
 

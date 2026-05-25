@@ -4,6 +4,9 @@ export async function middleware(req) {
     const token = req.cookies.get("token")?.value;
     const path = req.nextUrl.pathname;
 
+    if (path === "/visiting-card" || path.startsWith("/visiting-card/")) {
+        return NextResponse.redirect(new URL("/", req.url));
+    }
 
     if (!token && path.startsWith("/admin")) {
         return NextResponse.redirect(new URL("/login", req.url));
@@ -17,5 +20,5 @@ export async function middleware(req) {
 }
 
 export const config = {
-    matcher: ["/admin/:path*", "/login"],
+    matcher: ["/admin/:path*", "/login", "/visiting-card", "/visiting-card/:path*"],
 };

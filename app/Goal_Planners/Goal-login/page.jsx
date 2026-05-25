@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 export default function LoginModal({ open, onClose }) {
   const [pan, setPan] = useState("");
@@ -9,11 +10,11 @@ export default function LoginModal({ open, onClose }) {
   const handleLogin = () => {
     // TODO: call your auth API here
     if (!pan || !password) {
-      alert("Please enter PAN and password");
+      showAppModal("Please enter PAN and password", { variant: "info", title: "Login" });
       return;
     }
     // fake success
-    alert("Logged in (demo). Now you can map investments.");
+    showAppModal("Logged in (demo). Now you can map investments.", { variant: "success", title: "Login" });
     onClose();
   };
 

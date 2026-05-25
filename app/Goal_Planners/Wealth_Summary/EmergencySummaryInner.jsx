@@ -12,6 +12,7 @@ import {
     Tooltip,
     Legend
 } from "chart.js";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -145,17 +146,17 @@ export default function EmergencySummaryInner() {
 
     function updateScheme() {
         if (selectedFundIndex === null) {
-            alert("Please open a scheme row to change.");
+            showAppModal("Please open a scheme row to change.", { variant: "info", title: "Change scheme" });
             return;
         }
         if (!selectedSchemeId) {
-            alert("Please select a scheme from the modal first.");
+            showAppModal("Please select a scheme from the modal first.", { variant: "info", title: "Change scheme" });
             return;
         }
 
         const scheme = modalSchemes.find((s) => s.id === selectedSchemeId);
         if (!scheme) {
-            alert("Selected scheme not found.");
+            showAppModal("Selected scheme not found.", { variant: "error", title: "Change scheme" });
             return;
         }
 

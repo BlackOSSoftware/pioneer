@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { showAppModal, confirmAppModal } from "@/lib/pioneer-modal-bus";
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState([]);
@@ -19,7 +20,7 @@ export default function LeadsPage() {
         setOriginalLeads(data.leads);
       }
     } catch (err) {
-      alert("Failed to fetch leads");
+      showAppModal("Failed to fetch leads.", { variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -49,7 +50,12 @@ export default function LeadsPage() {
 
   /* ================= DELETE ================= */
   const deleteLead = async (id) => {
-    if (!confirm("Delete this lead?")) return;
+    const ok = await confirmAppModal("Delete this lead? This cannot be undone.", {
+      title: "Delete lead",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+    });
+    if (!ok) return;
 
     await fetch(`/api/leads?id=${id}`, { method: "DELETE" });
     setLeads((prev) => prev.filter((l) => l._id !== id));
@@ -74,11 +80,11 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-200 dark:border-slate-700">
+    <div className="bg-white p-6 rounded-xl border border-gray-200">
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+        <h2 className="text-xl font-semibold text-gray-900">
           All Leads
         </h2>
 
@@ -88,9 +94,9 @@ export default function LeadsPage() {
             placeholder="Search by name or email..."
             onChange={handleSearch}
             className="
-              border border-gray-300 dark:border-slate-600
-              bg-white dark:bg-slate-800
-              text-gray-900 dark:text-gray-100
+              border border-gray-300
+              bg-white
+              text-gray-900
               px-3 py-2 rounded-lg text-sm w-64
               focus:outline-none focus:ring-2 focus:ring-blue-500
             "
@@ -99,8 +105,8 @@ export default function LeadsPage() {
           <button
             onClick={fetchLeads}
             className="
-              bg-gray-200 dark:bg-slate-700
-              text-gray-800 dark:text-gray-100
+              bg-gray-200
+              text-gray-800
               px-4 py-2 rounded-lg text-sm
               hover:bg-blue-600 hover:text-white
               transition
@@ -113,11 +119,11 @@ export default function LeadsPage() {
 
       {/* TABLE */}
       {loading ? (
-        <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        <p className="text-gray-600">Loading...</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border border-gray-200 dark:border-slate-700">
-            <thead className="bg-gray-100 dark:bg-slate-800">
+          <table className="w-full text-sm border border-gray-200">
+            <thead className="bg-gray-100">
               <tr>
                 {[
                   "Name",
@@ -130,7 +136,7 @@ export default function LeadsPage() {
                 ].map((h) => (
                   <th
                     key={h}
-                    className="p-2 border border-gray-200 dark:border-slate-700 text-left"
+                    className="p-2 border border-gray-200 text-left"
                   >
                     {h}
                   </th>
@@ -142,38 +148,38 @@ export default function LeadsPage() {
               {leads.map((l) => (
                 <tr
                   key={l._id}
-                  className="hover:bg-gray-50 dark:hover:bg-slate-800 transition"
+                  className="hover:bg-gray-50 transition"
                 >
-                  <td className="p-2 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-gray-100">
+                  <td className="p-2 border border-gray-200 text-gray-900">
                     {l.name}
                   </td>
 
-                  <td className="p-2 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300">
+                  <td className="p-2 border border-gray-200 text-gray-700">
                     {l.email}
                   </td>
 
-                  <td className="p-2 border border-gray-200 dark:border-slate-700">
+                  <td className="p-2 border border-gray-200">
                     <a
                       href={`tel:${l.mobile}`}
-                      className="text-blue-600 dark:text-blue-400 underline"
+                      className="text-blue-600 underline"
                     >
                       {l.mobile}
                     </a>
                   </td>
 
-                  <td className="p-2 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300">
+                  <td className="p-2 border border-gray-200 text-gray-700">
                     {l.goal}
                   </td>
 
-                  <td className="p-2 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300">
+                  <td className="p-2 border border-gray-200 text-gray-700">
                     {l.calculatorType}
                   </td>
 
-                  <td className="p-2 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300">
+                  <td className="p-2 border border-gray-200 text-gray-700">
                     {new Date(l.createdAt).toLocaleDateString()}
                   </td>
 
-                  <td className="p-2 border border-gray-200 dark:border-slate-700">
+                  <td className="p-2 border border-gray-200">
                     <button
                       onClick={() => deleteLead(l._id)}
                       className="
@@ -191,7 +197,7 @@ export default function LeadsPage() {
           </table>
 
           {leads.length === 0 && (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-6">
+            <p className="text-center text-gray-500 py-6">
               No leads found
             </p>
           )}

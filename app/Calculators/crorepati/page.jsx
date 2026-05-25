@@ -16,6 +16,7 @@ import {
 import { Pie, Bar, } from "react-chartjs-2";
 import Link from "next/link";
 import jsPDF from "jspdf";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 ChartJS.register(
     ArcElement,
@@ -130,7 +131,7 @@ export default function BecomeCrorepatiPage() {
 
 
         if (!name.trim() || !email.trim() || !mobile.trim() || !goal.trim()) {
-            alert("Please fill the form before downloading PDF.");
+            showAppModal("Please fill the form before downloading PDF.");
             return;
         }
 
@@ -150,9 +151,9 @@ export default function BecomeCrorepatiPage() {
         if (res.ok) {
             setShowForm(false);
             downloadPDF();
-            alert("Your PDF has been successfully downloaded! 🎉");
+            showAppModal("Your PDF has been successfully downloaded! 🎉");
         } else {
-            alert("Something went wrong! Please try again.");
+            showAppModal("Something went wrong! Please try again.");
         }
     };
     const downloadPDF = () => {
@@ -164,7 +165,10 @@ export default function BecomeCrorepatiPage() {
 
  
 
-        if (!pieImg) return alert("Please wait until the chart renders.");
+        if (!pieImg) {
+            showAppModal("Please wait until the chart renders.");
+            return;
+        }
 
         const pdf = new jsPDF("p", "pt", "a4");
         const W = pdf.internal.pageSize.getWidth();

@@ -15,6 +15,7 @@ import {
   LineElement,
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 import Link from "next/link";
 
 ChartJS.register(
@@ -134,7 +135,7 @@ export default function StepUpSIPCalculatorPage() {
 
 
     if (!name.trim() || !email.trim() || !mobile.trim() || !goal.trim()) {
-      alert("Please fill the form before downloading PDF.");
+      showAppModal("Please fill the form before downloading PDF.");
       return;
     }
 
@@ -154,9 +155,9 @@ export default function StepUpSIPCalculatorPage() {
     if (res.ok) {
       setShowForm(false);
       downloadPDF();
-      alert("Your PDF has been successfully downloaded! 🎉");
+      showAppModal("Your PDF has been successfully downloaded! 🎉");
     } else {
-      alert("Something went wrong! Please try again.");
+      showAppModal("Something went wrong! Please try again.");
     }
   };
 
@@ -168,7 +169,7 @@ export default function StepUpSIPCalculatorPage() {
     const pieCanvas = getCanvas(pieRef);
     const barCanvas = getCanvas(barRef);
     if (!pieCanvas || !barCanvas) {
-      alert("Please wait for charts to render.");
+      showAppModal("Please wait for charts to render.");
       return;
     }
     const pie = pieCanvas.toDataURL("image/png");

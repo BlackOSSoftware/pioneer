@@ -2,6 +2,7 @@ import "./globals.css";
 import Script from "next/script";
 import ClientRootLayout from "./ClientRootLayout";
 import FloatingButtons from "@/components/FloatingButtons";
+import { ModalProvider } from "@/components/ui/ModalProvider";
 
 export const metadata = {
   metadataBase: new URL("https://www.pioneerws.in"),
@@ -100,8 +101,10 @@ export default function RootLayout({ children }) {
       </head>
 
       <body className="min-h-screen bg-slate-50 antialiased">
-        <ClientRootLayout>{children}</ClientRootLayout>
-        <FloatingButtons />
+        <ModalProvider>
+          <ClientRootLayout>{children}</ClientRootLayout>
+          <FloatingButtons />
+        </ModalProvider>
       </body>
     </html>
   );

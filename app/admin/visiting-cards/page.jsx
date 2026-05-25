@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { showAppModal, confirmAppModal } from "@/lib/pioneer-modal-bus";
 
 export default function VisitingCardsAdminPage() {
   const [leads, setLeads] = useState([]);
@@ -16,7 +17,7 @@ export default function VisitingCardsAdminPage() {
         setLeads(data.leads || []);
       }
     } catch {
-      alert("Failed to fetch visiting card entries.");
+      showAppModal("Failed to fetch visiting card entries.", { variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -33,12 +34,20 @@ export default function VisitingCardsAdminPage() {
       (item) =>
         (item.userName || "").toLowerCase().includes(q) ||
         (item.userPhone || "").toLowerCase().includes(q) ||
-        (item.companyName || "").toLowerCase().includes(q)
+        (item.companyName || "").toLowerCase().includes(q) ||
+        (item.source || "").toLowerCase().includes(q) ||
+        (item.shareToken || "").toLowerCase().includes(q) ||
+        (item.cardAdvisorName || "").toLowerCase().includes(q)
     );
   }, [leads, search]);
 
   const deleteLead = async (id) => {
-    if (!confirm("Delete this entry?")) return;
+    const ok = await confirmAppModal("Delete this entry?", {
+      title: "Delete submission",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+    });
+    if (!ok) return;
     try {
       const res = await fetch(`/api/visiting-card?id=${id}`, { method: "DELETE" });
       const data = await res.json();
@@ -47,7 +56,7 @@ export default function VisitingCardsAdminPage() {
       }
       setLeads((prev) => prev.filter((lead) => lead._id !== id));
     } catch (error) {
-      alert(error.message || "Unable to delete.");
+      showAppModal(error.message || "Unable to delete.", { variant: "error" });
     }
   };
 
@@ -78,11 +87,13 @@ export default function VisitingCardsAdminPage() {
       ) : (
         <>
           <div className="hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[760px] border border-gray-200 text-sm">
+            <table className="w-full min-w-[960px] border border-gray-200 text-sm">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="border border-gray-200 p-2 text-left">User Name</th>
                   <th className="border border-gray-200 p-2 text-left">User Number</th>
+                  <th className="border border-gray-200 p-2 text-left">Source</th>
+                  <th className="border border-gray-200 p-2 text-left">Share / Advisor</th>
                   <th className="border border-gray-200 p-2 text-left">Company</th>
                   <th className="border border-gray-200 p-2 text-left">Subtitle</th>
                   <th className="border border-gray-200 p-2 text-left">Company Number</th>
@@ -98,6 +109,13 @@ export default function VisitingCardsAdminPage() {
                       <a href={`tel:${item.userPhone}`} className="text-blue-600 underline">
                         {item.userPhone}
                       </a>
+                    </td>
+                    <td className="border border-gray-200 p-2 text-gray-700">{item.source}</td>
+                    <td className="border border-gray-200 p-2 text-xs text-gray-700">
+                      {item.shareToken ? (
+                        <span className="block font-mono text-[11px]">{item.shareToken}</span>
+                      ) : null}
+                      {item.cardAdvisorName ? <span className="block text-gray-600">{item.cardAdvisorName}</span> : null}
                     </td>
                     <td className="border border-gray-200 p-2 text-gray-700">{item.companyName}</td>
                     <td className="border border-gray-200 p-2 text-gray-700">{item.subtitle}</td>
@@ -134,6 +152,9 @@ export default function VisitingCardsAdminPage() {
                     </a>
                   </p>
                   <p className="text-gray-600">Company: {item.companyName}</p>
+                  <p className="text-gray-600">Source: {item.source}</p>
+                  {item.shareToken ? <p className="text-xs text-gray-500">Share: {item.shareToken}</p> : null}
+                  {item.cardAdvisorName ? <p className="text-xs text-gray-500">Advisor: {item.cardAdvisorName}</p> : null}
                   <p className="text-gray-600">Subtitle: {item.subtitle}</p>
                   <p className="text-gray-600">Office: {item.companyPhone}</p>
                   <p className="text-xs text-gray-500">

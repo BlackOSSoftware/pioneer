@@ -2,6 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import { Pie, Bar } from "react-chartjs-2";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 import jsPDF from "jspdf";
 import Link from "next/link";
 import "@/lib/chartjs-fix";
@@ -124,7 +125,7 @@ export default function HomeLoanEMIPage() {
 
 
         if (!name.trim() || !email.trim() || !mobile.trim() || !goal.trim()) {
-            alert("Please fill the form before downloading PDF.");
+            showAppModal("Please fill the form before downloading PDF.");
             return;
         }
 
@@ -144,9 +145,9 @@ export default function HomeLoanEMIPage() {
         if (res.ok) {
             setShowForm(false);
             downloadPDF();
-            alert("Your PDF has been successfully downloaded! 🎉");
+            showAppModal("Your PDF has been successfully downloaded! 🎉");
         } else {
-            alert("Something went wrong! Please try again.");
+            showAppModal("Something went wrong! Please try again.");
         }
     };
     const yearlyChartData = useMemo(() => {
@@ -228,7 +229,7 @@ export default function HomeLoanEMIPage() {
             const barCanvas = barContainerRef.current?.querySelector("canvas");
 
             if (!pieCanvas || !barCanvas) {
-                alert("Charts not ready — please wait a moment and try again.");
+                showAppModal("Charts not ready — please wait a moment and try again.");
                 return;
             }
 
@@ -275,7 +276,7 @@ export default function HomeLoanEMIPage() {
 pdf.save(fileName);
         } catch (err) {
             console.error("PDF generation failed:", err);
-            alert("Failed to generate PDF. See console for details.");
+            showAppModal("Failed to generate PDF. See console for details.");
         }
     };
 

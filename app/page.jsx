@@ -1,4 +1,4 @@
-import Hero from "./components/Hero";
+import Hero from "@/components/layout/Hero";
 
 export const metadata = {
   title: "Pioneer Wealth Solutions | Financial Planning and Wealth Advisory",

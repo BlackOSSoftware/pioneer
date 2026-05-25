@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 export default function DreamHomePage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function DreamHomePage() {
 
   const handleBuild = () => {
   if (!age || !houseCost || !inflation) {
-    alert("Please fill required fields");
+    showAppModal("Please fill required fields", { variant: "info", title: "Required fields" });
     return;
   }
 

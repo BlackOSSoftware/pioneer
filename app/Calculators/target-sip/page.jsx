@@ -12,6 +12,9 @@ import {
   BarElement,
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
+import { PDF_CHART_OPTIONS, PDF_PIE_OPTIONS } from "@/lib/chart-pdf-options";
+import { drawBrandedPdfHeader, drawLineChartPdf } from "@/lib/pdf-branded";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 ChartJS.register(
   ArcElement,
@@ -122,13 +125,12 @@ export default function TargetAmountSIPCalculatorPage() {
     null;
 
   // ===== PDF DOWNLOAD =====
-  const downloadPDF = () => {
-
+  const downloadPDF = async () => {
     const pieCanvas = getCanvas(pieRef);
     const barCanvas = getCanvas(barRef);
 
     if (!pieCanvas || !barCanvas) {
-      alert("Please wait... charts not ready.");
+      showAppModal("Charts are still rendering. Please wait a moment and try again.", { title: "Almost ready" });
       return;
     }
 
@@ -137,92 +139,83 @@ export default function TargetAmountSIPCalculatorPage() {
 
     const pdf = new jsPDF("p", "pt", "a4");
     const W = pdf.internal.pageSize.getWidth();
-    let y = 35;
 
-    // HEADER
-    pdf.setFillColor("#3B82F6");
-    pdf.rect(0, 0, W, 55, "F");
+    const subtitle = `Client: ${formData.name} | Goal: ${formData.goal} | Email: ${formData.email} | Mobile: ${formData.mobile}`;
+    let y = await drawBrandedPdfHeader(pdf, {
+      reportTitle: "Target Amount SIP — Advisory Report",
+      reportSubtitle: subtitle,
+    });
 
-    pdf.setTextColor("#ffffff");
-    pdf.setFontSize(18);
-    pdf.text("Pioneer Wealth", 30, 35);
-
-    pdf.setFontSize(9);
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, W - 180, 35);
-
-    y = 75;
-
-    // SUMMARY BOXES
     const summary = [
-      ["Target Amount", formatNum(targetAmount)],
-      ["Duration", `${years} Years`],
-      ["Return (p.a.)", `${annualReturn}%`],
+      ["Target amount", formatNum(targetAmount)],
+      ["Investment horizon", `${years} years`],
+      ["Expected return (p.a.)", `${annualReturn}%`],
     ];
 
     const boxW = (W - 80) / 3;
-
     summary.forEach((item, i) => {
       const x = 30 + i * (boxW + 10);
-
       pdf.setDrawColor("#93C5FD");
       pdf.roundedRect(x, y, boxW, 50, 6, 6);
-
       pdf.setTextColor("#555");
       pdf.setFontSize(10);
       pdf.text(item[0], x + 10, y + 18);
-
       pdf.setTextColor("#000");
       pdf.setFontSize(12);
       pdf.text(item[1], x + 10, y + 38);
     });
 
     y += 95;
-
     pdf.setFontSize(14).setTextColor("#000");
-    pdf.text("Investment Breakdown", 30, y);
-
+    pdf.text("Investment breakdown", 30, y);
     y += 15;
-
     pdf.addImage(pie, "PNG", 30, y, 180, 160);
 
     const tableX = 240;
     const tableW = W - tableX - 30;
-
     const rows = [
-      ["Required Monthly SIP", formatNum(simulation.sip)],
-      ["Total Invested", formatNum(simulation.totalInvested)],
-      ["Total Growth", formatNum(simulation.growth)],
-      ["Future Value", formatNum(simulation.totalValue)],
+      ["Required monthly SIP", formatNum(simulation.sip)],
+      ["Total invested", formatNum(simulation.totalInvested)],
+      ["Total growth", formatNum(simulation.growth)],
+      ["Projected future value", formatNum(simulation.totalValue)],
     ];
 
     y += 20;
-
     rows.forEach((row, index) => {
       if (index % 2 === 0) {
         pdf.setFillColor("#f6f6f6");
         pdf.rect(tableX, y - 12, tableW, 22, "F");
       }
-
       pdf.setTextColor("#333");
       pdf.setFontSize(10);
       pdf.text(row[0], tableX + 10, y + 3);
-
-      pdf.text(row[1], tableX + tableW - 10, y + 3, {
-        align: "right",
-      });
-
+      pdf.text(row[1], tableX + tableW - 10, y + 3, { align: "right" });
       y += 22;
     });
 
     pdf.addPage();
     y = 40;
-
     pdf.setFontSize(14).setTextColor("#000");
-    pdf.text("Projected SIP Growth", 30, y);
-
+    pdf.text("Projected growth (bars)", 30, y);
     y += 15;
+    pdf.addImage(bar, "PNG", 30, y, W - 60, 200);
+    y += 220;
 
-    pdf.addImage(bar, "PNG", 30, y, W - 60, 220);
+    const lineLabels = simulation.yearly.map((row) => `Y${row.year}`);
+    const lineVals = simulation.yearly.map((row) => Math.round(row.value));
+    y = drawLineChartPdf(pdf, 30, y, W - 60, 150, lineLabels, lineVals);
+
+    if (y > pdf.internal.pageSize.getHeight() - 40) {
+      pdf.addPage();
+      y = 40;
+    }
+    pdf.setFontSize(8).setTextColor("#64748b");
+    pdf.text(
+      "Figures are illustrative estimates only. Mutual fund investments are subject to market risks; read all scheme related documents carefully.",
+      30,
+      Math.min(y + 24, pdf.internal.pageSize.getHeight() - 20),
+      { maxWidth: W - 60 }
+    );
 
     const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
     pdf.save(fileName);
@@ -234,7 +227,7 @@ export default function TargetAmountSIPCalculatorPage() {
     const { name, email, mobile, goal } = formData;
 
     if (!name || !email || !mobile || !goal) {
-      alert("Please fill all details");
+      showAppModal("Please fill all details before downloading.", { title: "Missing information" });
       return;
     }
 
@@ -245,7 +238,7 @@ export default function TargetAmountSIPCalculatorPage() {
     });
 
     setShowForm(false);
-    downloadPDF();
+    await downloadPDF();
   };
 
   return (
@@ -322,7 +315,7 @@ export default function TargetAmountSIPCalculatorPage() {
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow border">
-              <Pie ref={pieRef} data={pieData} />
+              <Pie ref={pieRef} data={pieData} options={PDF_PIE_OPTIONS} />
             </div>
 
           </div>
@@ -330,7 +323,7 @@ export default function TargetAmountSIPCalculatorPage() {
         </div>
 
         <div className="mt-10 bg-white p-6 rounded-xl shadow border">
-          <Bar ref={barRef} data={growthData} />
+          <Bar ref={barRef} data={growthData} options={PDF_CHART_OPTIONS} />
         </div>
 
       </main>

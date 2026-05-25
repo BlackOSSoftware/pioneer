@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, X } from "lucide-react";
-import Link from "next/link";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,11 +26,15 @@ export default function LoginPage() {
         body: JSON.stringify({ name, email, password }),
       });
       const data = await res.json();
-      alert(data.message || "Registration successful!");
-      if (data.success) setActiveTab("login");
+      if (data.success) {
+        showAppModal(data.message || "Registration successful.", { variant: "success", title: "Registered" });
+        setActiveTab("login");
+      } else {
+        showAppModal(data.message || "Registration failed.", { variant: "error" });
+      }
     } catch (err) {
       console.error(err);
-      alert("Something went wrong!");
+      showAppModal("Something went wrong. Please try again.", { variant: "error" });
     }
     setLoading(false);
   };
@@ -52,15 +56,14 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.success) {
-        alert("Login successful!");
-        
+        showAppModal("Login successful. Redirecting…", { variant: "success", title: "Welcome" });
         window.location.href = "/admin";
       } else {
-        alert(data.message || "Invalid credentials!");
+        showAppModal(data.message || "Invalid credentials.", { variant: "error", title: "Login failed" });
       }
     } catch (err) {
       console.error(err);
-      alert("Something went wrong!");
+      showAppModal("Something went wrong. Please try again.", { variant: "error" });
     }
     setLoading(false);
   };
@@ -68,7 +71,10 @@ export default function LoginPage() {
   
   const handleForgot = async (e) => {
     e.preventDefault();
-    if (!forgotEmail) return alert("Please enter your email!");
+    if (!forgotEmail) {
+      showAppModal("Please enter your email address.", { variant: "error", title: "Required" });
+      return;
+    }
 
     try {
       const res = await fetch("/api/auth/forgot", {
@@ -77,11 +83,14 @@ export default function LoginPage() {
         body: JSON.stringify({ email: forgotEmail }),
       });
       const data = await res.json();
-      alert(data.message);
+      showAppModal(data.message || "Done.", {
+        variant: data.success ? "success" : "error",
+        title: data.success ? "Email sent" : "Request failed",
+      });
       if (data.success) setForgotOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Error sending reset link!");
+      showAppModal("Error sending reset link. Please try again.", { variant: "error" });
     }
   };
 
@@ -167,13 +176,7 @@ export default function LoginPage() {
                   <input type="checkbox" className="accent-blue-600" />
                   <span>Remember me</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setForgotOpen(true)}
-                  className="text-blue-600 hover:underline"
-                >
-                  Forgot Password?
-                </button>
+              
               </div>
 
               
@@ -283,43 +286,7 @@ export default function LoginPage() {
         )}
       </div>
 
-      {/* ================= Forgot Password Modal ================= */}
-      {forgotOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm relative">
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-              onClick={() => setForgotOpen(false)}
-            >
-              <X size={20} />
-            </button>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2 text-center">
-              Forgot Password?
-            </h2>
-            <p className="text-gray-500 text-center mb-6 text-sm">
-              Enter your registered email, and we’ll send you a reset link.
-            </p>
-            <form className="space-y-4" onSubmit={handleForgot}>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
-                <input
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-all shadow-md"
-              >
-                Send Reset Link
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+     
     </div>
   );
 }

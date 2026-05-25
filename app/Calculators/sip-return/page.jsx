@@ -17,6 +17,9 @@ import {
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
 import jsPDF from "jspdf";
+import { PDF_CHART_OPTIONS, PDF_PIE_OPTIONS } from "@/lib/chart-pdf-options";
+import { drawBrandedPdfHeader, drawLineChartPdf } from "@/lib/pdf-branded";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
 
 ChartJS.register(
   ArcElement,
@@ -46,25 +49,17 @@ const SliderMarks = ({ marks }) => (
 
 export default function SIPReturnPage() {
   const [monthly, setMonthly] = useState();
-  const [months, setMonths] = useState(120);
+  const [years, setYears] = useState(10);
   const [annualReturn, setAnnualReturn] = useState(12);
 
   const pieRef = useRef(null);
   const barRef = useRef(null);
 
-
   const setMonthlySafe = (v) => setMonthly(Math.max(0, Math.min(v, 1000000000)));
-  const setMonthsSafe = (v) => setMonths(Math.max(1, Math.min(v, 600)));
+  const setYearsSafe = (v) => setYears(Math.max(1, Math.min(v, 50)));
   const setReturnSafe = (v) => setAnnualReturn(Math.max(0, Math.min(v, 30)));
-  const sipValues = [0, 1000, 10000, 100000, 1000000, 10000000, 100000000];
 
-  <input
-    type="number"
-    className="w-full border rounded-lg p-3 text-gray-700 mb-4"
-    value={monthly}
-    onChange={(e) => setMonthlySafe(Number(e.target.value))}
-  />
-
+  const months = years * 12;
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -75,13 +70,14 @@ export default function SIPReturnPage() {
   });
 
   const r = annualReturn / 100 / 12;
+  const monthlyAmt = monthly || 0;
   const futureValue = useMemo(() => {
-    if (r === 0) return monthly * months;
-    const fv = monthly * ((Math.pow(1 + r, months) - 1) / r);
+    if (r === 0) return monthlyAmt * months;
+    const fv = monthlyAmt * ((Math.pow(1 + r, months) - 1) / r);
     return fv > 1e12 ? 1e12 : fv;
-  }, [monthly, months, r]);
+  }, [monthlyAmt, months, r]);
 
-  const totalInvested = monthly * months;
+  const totalInvested = monthlyAmt * months;
   const totalGrowth = Math.max(0, futureValue - totalInvested);
 
 
@@ -96,36 +92,50 @@ export default function SIPReturnPage() {
   };
 
 
-  const growthData = {
-    labels: Array.from(
-      { length: 12 },
-      (_, i) => `${(i + 1) * Math.floor(Math.max(1, months / 12))}m`
-    ),
-    datasets: [
-      {
-        label: "Invested",
-        type: "bar",
-        data: Array.from({ length: 12 }, (_, i) => totalInvested * ((i + 1) / 12)),
-        backgroundColor: "#93C5FD",
-      },
-      {
-        label: "Value",
-        type: "bar",
-        data: Array.from({ length: 12 }, (_, i) => futureValue * ((i + 1) / 12)),
-        backgroundColor: "#3B82F6",
-      },
-    ],
-  };
+  const growthData = useMemo(() => {
+    const m = monthly || 0;
+    const rate = annualReturn / 100 / 12;
+    const labels = [];
+    const investedSeries = [];
+    const valueSeries = [];
+    let balance = 0;
+    let invested = 0;
+    for (let y = 1; y <= years; y++) {
+      for (let mo = 0; mo < 12; mo++) {
+        balance += m;
+        invested += m;
+        balance *= 1 + rate;
+      }
+      labels.push(`Year ${y}`);
+      investedSeries.push(Math.round(invested));
+      valueSeries.push(Math.round(balance));
+    }
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Invested",
+          type: "bar",
+          data: investedSeries,
+          backgroundColor: "#93C5FD",
+        },
+        {
+          label: "Value",
+          type: "bar",
+          data: valueSeries,
+          backgroundColor: "#3B82F6",
+        },
+      ],
+    };
+  }, [years, monthly, annualReturn]);
 
   const handleSubmitForm = async () => {
     const { name, email, mobile, goal, calculatorType } = formData;
 
-
     if (!name.trim() || !email.trim() || !mobile.trim() || !goal.trim()) {
-      alert("Please fill the form before downloading PDF.");
+      showAppModal("Please fill the form before downloading the PDF.", { title: "Missing information" });
       return;
     }
-
 
     const res = await fetch("/api/sip-form", {
       method: "POST",
@@ -141,42 +151,37 @@ export default function SIPReturnPage() {
 
     if (res.ok) {
       setShowForm(false);
-      downloadPDF();
-      alert("Your PDF has been successfully downloaded! 🎉");
+      await downloadPDF();
+      showAppModal("Your PDF has been downloaded successfully.", { variant: "success", title: "Download complete" });
     } else {
-      alert("Something went wrong! Please try again.");
+      showAppModal("Something went wrong while saving your details. Please try again.", { variant: "error" });
     }
   };
-
 
   const getCanvas = (ref) =>
     ref.current?.canvas || ref.current?.ctx?.canvas || ref.current?.chart?.canvas || null;
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     const pie = getCanvas(pieRef)?.toDataURL("image/png");
     const bar = getCanvas(barRef)?.toDataURL("image/png");
 
-    if (!pie || !bar) return alert("Please wait… charts not ready.");
+    if (!pie || !bar) {
+      showAppModal("Charts are still rendering. Please wait a moment and try again.", { title: "Almost ready" });
+      return;
+    }
 
     const pdf = new jsPDF("p", "pt", "a4");
     const W = pdf.internal.pageSize.getWidth();
-    let y = 35;
 
-
-    pdf.setFillColor("#3B82F6");
-    pdf.rect(0, 0, W, 55, "F");
-    pdf.setFontSize(18).setTextColor("#93C5FD");
-    pdf.text("Pioneer Wealth", 30, 35);
-
-    pdf.setFontSize(9).setTextColor("#93C5FD");
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, W - 180, 35);
-
-
-    y = 72;
+    const subtitle = `Client: ${formData.name} | Goal: ${formData.goal} | Email: ${formData.email} | Mobile: ${formData.mobile}`;
+    let y = await drawBrandedPdfHeader(pdf, {
+      reportTitle: "SIP Return — Advisory Report",
+      reportSubtitle: subtitle,
+    });
 
     const summary = [
       ["Monthly SIP", formatNum(monthly)],
-      ["Duration", `${months} months`],
+      ["Duration", `${years} years`],
       ["Return (p.a.)", `${annualReturn}%`],
     ];
 
@@ -190,28 +195,26 @@ export default function SIPReturnPage() {
       pdf.setFontSize(12).setTextColor("#000").text(s[1], x + 8, y + 32);
     });
 
-
     y += 95;
-    pdf.setFontSize(14).setTextColor("#000").text("Investment Breakdown", 30, y);
+    pdf.setFontSize(14).setTextColor("#000").text("Investment breakdown", 30, y);
 
     y += 15;
     pdf.addImage(pie, "PNG", 30, y, 170, 160);
 
-
     y += 185;
-    pdf.setFontSize(14).text("SIP Projection Values", 30, y);
+    pdf.setFontSize(14).text("Projection summary", 30, y);
 
     y += 10;
 
     const tableRows = [
-      ["Total Invested", formatNum(totalInvested)],
-      ["Total Growth", formatNum(totalGrowth)],
-      ["Future Value", formatNum(futureValue)],
+      ["Total invested", formatNum(totalInvested)],
+      ["Total growth", formatNum(totalGrowth)],
+      ["Future value", formatNum(futureValue)],
     ];
 
     const tableW = W - 60;
 
-    pdf.setFillColor("#3B82F6");
+    pdf.setFillColor("#0f4c81");
     pdf.rect(30, y, tableW, 23, "F");
     pdf.setFontSize(11).setTextColor("#fff").text("Metric", 40, y + 16);
     pdf.text("Amount", 30 + tableW - 10, y + 16, { align: "right" });
@@ -226,27 +229,29 @@ export default function SIPReturnPage() {
       y += 24;
     });
 
-
     y += 35;
-    pdf.setFontSize(14).text("Projected SIP Growth", 30, y);
+    pdf.setFontSize(14).text("Projected SIP growth (bars)", 30, y);
 
     y += 15;
 
     pdf.addImage(bar, "PNG", 30, y, tableW, 200);
 
+    y += 220;
+    const lineLabels = growthData.labels;
+    const lineVals = growthData.datasets[1].data.map((v) => Number(v));
+    y = drawLineChartPdf(pdf, 30, y, tableW, 150, lineLabels, lineVals);
 
-    
-const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
-pdf.save(fileName);
+    pdf.setFontSize(8).setTextColor("#64748b");
+    pdf.text(
+      "Illustrative estimate only. Past performance does not guarantee future results. Consult a qualified advisor before investing.",
+      30,
+      Math.min(y + 20, pdf.internal.pageSize.getHeight() - 24),
+      { maxWidth: tableW }
+    );
 
+    const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
+    pdf.save(fileName);
   };
-
-
-
-  const moneyMarks = ["0", "1K", "10K", "1L", "10L", "50L", "1Cr", "10Cr", "100Cr"];
-  const monthsMarks = ["0", "75", "150", "225", "300", "375", "450"];
-  const returnMarks = ["0%", "7%", "15%", "22%", "30%"];
-
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -317,27 +322,27 @@ pdf.save(fileName);
 
             <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 mt-2">
               <label className="block text-[15px] text-gray-800 mb-3 font-semibold">
-                How many months will you continue the SIP?
+                How many years will you continue the SIP?
               </label>
 
               <input
                 type="number"
                 className="w-full border rounded-lg p-3 text-gray-700 focus:ring-green-600 focus:outline-none mb-4"
-                value={months}
-                onChange={(e) => setMonthsSafe(Number(e.target.value || 0))}
+                value={years}
+                onChange={(e) => setYearsSafe(Number(e.target.value || 0))}
               />
 
               <input
                 type="range"
                 min={1}
-                max={600}
+                max={50}
                 step={1}
-                value={months}
-                onChange={(e) => setMonthsSafe(Number(e.target.value))}
+                value={years}
+                onChange={(e) => setYearsSafe(Number(e.target.value))}
                 className="w-full accent-blue-600"
               />
 
-              <SliderMarks marks={["0", "75", "150", "225", "300", "375", "450"]} />
+              <SliderMarks marks={["1y", "10y", "20y", "30y", "40y", "50y"]} />
             </div>
 
 
@@ -385,7 +390,7 @@ pdf.save(fileName);
                 </button>
               </div>
 
-              <Pie ref={pieRef} data={pieData} />
+              <Pie ref={pieRef} data={pieData} options={PDF_PIE_OPTIONS} />
             </div>
 
 
@@ -418,7 +423,7 @@ pdf.save(fileName);
 
           <section className="mt-12 bg-white p-8 rounded-xl shadow-md border border-gray-100">
             <h3 className="font-semibold mb-4 text-xl text-gray-800">Projected SIP Growth</h3>
-            <Bar ref={barRef} data={growthData} />
+            <Bar ref={barRef} data={growthData} options={PDF_CHART_OPTIONS} />
           </section>
 
 

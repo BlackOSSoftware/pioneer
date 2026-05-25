@@ -14,6 +14,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
+    "cloudinary": "^2.10.0",
     "dom-to-image-more": "^3.7.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",

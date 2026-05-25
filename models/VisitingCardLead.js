@@ -8,6 +8,10 @@ const VisitingCardLeadSchema = new mongoose.Schema(
     subtitle: { type: String, default: "Financial Planning & Mutual Funds", trim: true },
     companyPhone: { type: String, default: "+91 98765 43210", trim: true },
     source: { type: String, default: "Visiting Card Page", trim: true },
+    /** Public share token when lead came from /card/[token] */
+    shareToken: { type: String, trim: true, default: "" },
+    /** Advisor name on the visiting card link (for admin context) */
+    cardAdvisorName: { type: String, trim: true, default: "" },
   },
   { timestamps: true }
 );

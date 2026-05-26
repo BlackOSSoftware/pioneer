@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { Building2, Copy, Link2, MessageCircle, Phone, Sparkles, Trash2, UserRound } from "lucide-react";
+import { Copy, Link2, Sparkles, Trash2 } from "lucide-react";
 import VisitingCardFace from "@/components/visiting-card/VisitingCardFace";
 import { showAppModal, confirmAppModal } from "@/lib/pioneer-modal-bus";
 
@@ -11,10 +11,16 @@ const COMPANY = {
   subtitle: "Financial Planning & Mutual Funds",
   role: "Wealth Advisor",
   phone: "+91 98765 43210",
-  email: "advisory@pioneerwealth.in",
+  email: "info@pioneerws.in",
   website: "www.pioneerwealth.in",
   address: "Mumbai, India",
 };
+
+const CARD_TEMPLATES = [
+  { value: "classic", label: "Executive Arc" },
+  { value: "modern", label: "Obsidian Edge" },
+  { value: "clean", label: "Minimal Luxe" },
+];
 
 async function waitForAssets(node) {
   if (!node) return;
@@ -41,14 +47,17 @@ export default function VisitingCardStudioPage() {
   const [showPopup, setShowPopup] = useState(true);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [cardTemplate, setCardTemplate] = useState("classic");
   const [previewReady, setPreviewReady] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
+  const [generatedLink, setGeneratedLink] = useState("");
   const cardRef = useRef(null);
 
   const [shares, setShares] = useState([]);
   const [shareName, setShareName] = useState("");
   const [sharePhone, setSharePhone] = useState("");
+  const [shareTemplate, setShareTemplate] = useState("classic");
   const [creatingShare, setCreatingShare] = useState(false);
 
   const cleanPhone = useMemo(() => phone.replace(/[^\d+\-\s()]/g, ""), [phone]);
@@ -68,6 +77,26 @@ export default function VisitingCardStudioPage() {
   useEffect(() => {
     void fetchShares();
   }, []);
+
+  const createShareRecord = async ({ advisorName, advisorPhone, template }) => {
+    const res = await fetch("/api/visiting-card-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        advisorName,
+        advisorPhone,
+        companyName: COMPANY.name,
+        subtitle: COMPANY.subtitle,
+        companyPhone: COMPANY.phone,
+        companyEmail: COMPANY.email,
+        role: COMPANY.role,
+        template,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data?.message || "Could not create link.");
+    return data.share;
+  };
 
   const handleCreateCard = (e) => {
     e.preventDefault();
@@ -100,8 +129,11 @@ export default function VisitingCardStudioPage() {
     try {
       setIsDownloading(true);
       setSaveStatus("");
+      setGeneratedLink("");
       let savedToAdmin = false;
       let saveErrorMessage = "";
+      let shareUrl = "";
+      let shareErrorMessage = "";
       try {
         const res = await fetch("/api/visiting-card", {
           method: "POST",
@@ -142,11 +174,29 @@ export default function VisitingCardStudioPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      if (savedToAdmin) setSaveStatus("Downloaded successfully. Data saved in admin.");
-      else {
-        const hint = saveErrorMessage ? ` ${saveErrorMessage}` : "";
-        setSaveStatus(`Card downloaded, but admin save failed.${hint}`);
+
+      try {
+        const share = await createShareRecord({
+          advisorName: name.trim(),
+          advisorPhone: enteredPhone,
+          template: cardTemplate,
+        });
+        shareUrl = `${window.location.origin}/card/${share.token}`;
+        setGeneratedLink(shareUrl);
+        await fetchShares();
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+        } catch {
+          /* ignore clipboard failures */
+        }
+      } catch (error) {
+        shareErrorMessage = error.message || "Share link failed.";
       }
+
+      const statusParts = ["Card downloaded."];
+      statusParts.push(savedToAdmin ? "Data saved in admin." : `Admin save failed.${saveErrorMessage ? ` ${saveErrorMessage}` : ""}`);
+      statusParts.push(shareUrl ? "Share link generated and copied." : `Share link failed.${shareErrorMessage ? ` ${shareErrorMessage}` : ""}`);
+      setSaveStatus(statusParts.join(" "));
     } catch (error) {
       showAppModal(error.message || "Unable to download right now.");
     } finally {
@@ -162,23 +212,15 @@ export default function VisitingCardStudioPage() {
     }
     setCreatingShare(true);
     try {
-      const res = await fetch("/api/visiting-card-share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          advisorName: shareName.trim(),
-          advisorPhone: sharePhone.trim(),
-          companyName: COMPANY.name,
-          subtitle: COMPANY.subtitle,
-          companyPhone: COMPANY.phone,
-          role: COMPANY.role,
-        }),
+      const share = await createShareRecord({
+        advisorName: shareName.trim(),
+        advisorPhone: sharePhone.trim(),
+        template: shareTemplate,
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data?.message || "Could not create link.");
       setShareName("");
       setSharePhone("");
       await fetchShares();
+      setGeneratedLink(`${window.location.origin}/card/${share.token}`);
       showAppModal("Share link created. Copy it from the list below.", { variant: "success" });
     } catch (err) {
       showAppModal(err.message || "Failed to create link.", { variant: "error" });
@@ -257,6 +299,7 @@ export default function VisitingCardStudioPage() {
                 personName={previewReady ? name : ""}
                 personPhone={previewReady ? enteredPhone : ""}
                 company={COMPANY}
+                template={cardTemplate}
               />
             </div>
           </div>
@@ -278,6 +321,26 @@ export default function VisitingCardStudioPage() {
               {isDownloading ? "Saving & downloading…" : "Download visiting card"}
             </button>
             {saveStatus ? <p className="mt-3 text-xs" style={{ color: "#3E5870" }}>{saveStatus}</p> : null}
+            {generatedLink ? (
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2">
+                <input
+                  readOnly
+                  value={generatedLink}
+                  className="min-w-0 flex-1 bg-transparent text-xs text-slate-700 outline-none"
+                  title="Generated visiting card share link"
+                />
+                <button
+                  type="button"
+                  className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(generatedLink);
+                    showAppModal("Link copied to clipboard.", { variant: "success" });
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
+            ) : null}
           </section>
 
           <section className="rounded-2xl border p-4 shadow-sm sm:p-6" style={{ background: "rgba(255,255,255,0.92)", borderColor: "#D6E3EE" }}>
@@ -288,6 +351,16 @@ export default function VisitingCardStudioPage() {
             <p className="mt-2 text-sm text-slate-600">
               Visitors see the Pioneer card, then a flip to the advisor card, with a lead form tracked to this link.
             </p>
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-2">
+              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Live link preview</p>
+              <VisitingCardFace
+                mode="person"
+                personName={shareName}
+                personPhone={sharePhone}
+                company={COMPANY}
+                template={shareTemplate}
+              />
+            </div>
             <form onSubmit={createShareLink} className="mt-4 space-y-3">
               <input
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -301,6 +374,28 @@ export default function VisitingCardStudioPage() {
                 value={sharePhone}
                 onChange={(e) => setSharePhone(e.target.value)}
               />
+              <div className="grid gap-2 sm:grid-cols-3">
+                {CARD_TEMPLATES.map((template) => (
+                  <label
+                    key={template.value}
+                    className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-xs font-semibold transition ${
+                      shareTemplate === template.value
+                        ? "border-sky-600 bg-sky-50 text-sky-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-sky-200"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="shareTemplate"
+                      value={template.value}
+                      checked={shareTemplate === template.value}
+                      onChange={(e) => setShareTemplate(e.target.value)}
+                      className="sr-only"
+                    />
+                    {template.label}
+                  </label>
+                ))}
+              </div>
               <button
                 type="submit"
                 disabled={creatingShare}
@@ -315,7 +410,7 @@ export default function VisitingCardStudioPage() {
                 <li key={s._id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{s.advisorName}</p>
-                    <p className="truncate text-xs text-slate-500">{s.advisorPhone}</p>
+                    <p className="truncate text-xs text-slate-500">{s.advisorPhone} - {CARD_TEMPLATES.find((t) => t.value === s.template)?.label || "Executive Arc"}</p>
                   </div>
                   <div className="flex shrink-0 gap-1">
                     <button type="button" className="rounded p-2 text-slate-600 hover:bg-slate-100" onClick={() => copyLink(s.token)} title="Copy link">
@@ -362,6 +457,31 @@ export default function VisitingCardStudioPage() {
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
                 />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Card format</label>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {CARD_TEMPLATES.map((template) => (
+                    <label
+                      key={template.value}
+                      className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-xs font-semibold transition ${
+                        cardTemplate === template.value
+                          ? "border-sky-600 bg-sky-50 text-sky-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-sky-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="cardTemplate"
+                        value={template.value}
+                        checked={cardTemplate === template.value}
+                        onChange={(e) => setCardTemplate(e.target.value)}
+                        className="sr-only"
+                      />
+                      {template.label}
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => setShowPopup(false)} className="flex-1 rounded-lg border py-2 text-sm">

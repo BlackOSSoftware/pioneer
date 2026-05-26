@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import VisitingCardFace from "@/components/visiting-card/VisitingCardFace";
 import { showAppModal } from "@/lib/pioneer-modal-bus";
 
@@ -46,8 +45,10 @@ export default function PublicVisitingCardClient({ token }) {
         subtitle: share.subtitle,
         role: share.role,
         phone: share.companyPhone,
+        email: share.companyEmail || "info@pioneerws.in",
       }
     : {};
+  const template = share?.template || "classic";
 
   const handleLead = async (e) => {
     e.preventDefault();
@@ -78,9 +79,6 @@ export default function PublicVisitingCardClient({ token }) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center bg-slate-50 px-4 text-center">
         <p className="text-lg font-semibold text-slate-800">{loadError}</p>
-        <Link href="/" className="mt-6 text-sky-700 underline">
-          Back to home
-        </Link>
       </div>
     );
   }
@@ -94,10 +92,12 @@ export default function PublicVisitingCardClient({ token }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-sky-50 to-slate-100 px-3 py-10 sm:px-6">
-      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-sky-50 to-slate-100 px-2 py-5 min-[360px]:px-3 sm:px-6 sm:py-10">
+      <div className="mx-auto grid w-full max-w-6xl gap-5 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="flex flex-col items-center">
-          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-sky-800">Pioneer Wealth Solutions</p>
+          <p className="mb-3 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-800 min-[360px]:text-xs min-[360px]:tracking-[0.2em]">
+            Pioneer Wealth Solutions
+          </p>
           <div className="relative w-full max-w-[560px]" style={{ perspective: "1200px" }}>
             <div
               className="relative transition-transform duration-[900ms] ease-out"
@@ -107,7 +107,7 @@ export default function PublicVisitingCardClient({ token }) {
               }}
             >
               <div className="backface-hidden" style={{ backfaceVisibility: "hidden" }}>
-                <VisitingCardFace mode="company" company={company} />
+                <VisitingCardFace mode="company" company={company} template={template} />
               </div>
               <div
                 className="absolute inset-0"
@@ -121,16 +121,17 @@ export default function PublicVisitingCardClient({ token }) {
                   personName={share.advisorName}
                   personPhone={share.advisorPhone}
                   company={company}
+                  template={template}
                 />
               </div>
             </div>
           </div>
-          <p className="mt-4 text-center text-xs text-slate-500">
+          <p className="mt-3 text-center text-xs text-slate-500 sm:mt-4">
             {!flipped ? "Introducing Pioneer Wealth…" : "Your advisor's card"}
           </p>
         </div>
 
-        <aside className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur">
+        <aside className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-lg backdrop-blur min-[360px]:p-5 sm:p-6">
           <h2 className="text-lg font-semibold text-slate-900">Connect with us</h2>
           <p className="mt-2 text-sm text-slate-600">Share your details and we&apos;ll reach out from this advisor&apos;s desk.</p>
           <form onSubmit={handleLead} className="mt-6 space-y-4">
@@ -160,9 +161,6 @@ export default function PublicVisitingCardClient({ token }) {
               {submitting ? "Sending…" : "Contact us"}
             </button>
           </form>
-          <Link href="/contact" className="mt-4 block text-center text-sm text-sky-700 underline">
-            Prefer the full contact page?
-          </Link>
         </aside>
       </div>
     </div>

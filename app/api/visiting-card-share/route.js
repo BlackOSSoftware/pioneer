@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/mongodb";
 import { VisitingCardShare } from "@/models/VisitingCardShare";
 import { isAdminRequest, adminUnauthorized } from "@/lib/admin-auth";
 
+const CARD_TEMPLATES = new Set(["classic", "modern", "clean"]);
+
 export async function GET(req) {
   try {
     await connectDB();
@@ -44,9 +46,11 @@ export async function POST(req) {
       advisorName,
       advisorPhone,
       advisorEmail: body?.advisorEmail?.trim() || "",
+      template: CARD_TEMPLATES.has(body?.template) ? body.template : "classic",
       companyName: body?.companyName?.trim() || "Pioneer Wealth",
       subtitle: body?.subtitle?.trim() || "Financial Planning & Mutual Funds",
       companyPhone: body?.companyPhone?.trim() || "+91 98765 43210",
+      companyEmail: body?.companyEmail?.trim() || "info@pioneerws.in",
       role: body?.role?.trim() || "Wealth Advisor",
     });
 

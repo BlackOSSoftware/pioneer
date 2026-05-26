@@ -59,6 +59,55 @@ export default function AdminAboutSnippetPage() {
             onChange={(e) => setP(1, e.target.value)}
           />
         </div>
+        <div className="border-t border-slate-200 pt-4">
+          <label className="text-xs font-medium text-slate-600">Mission / Vision heading</label>
+          <input
+            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+            value={about.missionVisionHeading || ""}
+            onChange={(e) => setAbout({ ...about, missionVisionHeading: e.target.value })}
+            placeholder="Our mission and vision"
+          />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-slate-600">Our Mission title</label>
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                value={about.ourMissionTitle || ""}
+                onChange={(e) => setAbout({ ...about, ourMissionTitle: e.target.value })}
+                placeholder="Our Mission"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">Our Mission text</label>
+              <textarea
+                className="mt-1 min-h-[110px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                value={about.ourMissionText || ""}
+                onChange={(e) => setAbout({ ...about, ourMissionText: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-slate-600">Our Vision title</label>
+              <input
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                value={about.ourVisionTitle || ""}
+                onChange={(e) => setAbout({ ...about, ourVisionTitle: e.target.value })}
+                placeholder="Our Vision"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">Our Vision text</label>
+              <textarea
+                className="mt-1 min-h-[110px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                value={about.ourVisionText || ""}
+                onChange={(e) => setAbout({ ...about, ourVisionText: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <button

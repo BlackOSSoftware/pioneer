@@ -519,25 +519,53 @@ pdf.save(fileName);
 
               <h2 className="text-lg font-bold mb-4 text-center">Fill Your Details</h2>
 
-              <input type="text" placeholder="Your Name"
-                className="border p-2 rounded w-full mb-3  text-gray-800"
+              <label className="mb-1 block text-sm font-semibold text-gray-700" htmlFor="sip-step-up-name">
+                Your Name
+              </label>
+              <input
+                id="sip-step-up-name"
+                type="text"
+                title="Your Name"
+                placeholder="Enter your full name"
+                className="border p-2 rounded w-full mb-3 text-gray-800"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
 
-              <input type="email" placeholder="Email Address"
-                className="border p-2 rounded w-full mb-3  text-gray-800"
+              <label className="mb-1 block text-sm font-semibold text-gray-700" htmlFor="sip-step-up-email">
+                Email Address
+              </label>
+              <input
+                id="sip-step-up-email"
+                type="email"
+                title="Email Address"
+                placeholder="Enter your email address"
+                className="border p-2 rounded w-full mb-3 text-gray-800"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
 
-              <input type="number" placeholder="Mobile Number"
-                className="border p-2 rounded w-full mb-3  text-gray-800"
+              <label className="mb-1 block text-sm font-semibold text-gray-700" htmlFor="sip-step-up-mobile">
+                Mobile Number
+              </label>
+              <input
+                id="sip-step-up-mobile"
+                type="number"
+                title="Mobile Number"
+                placeholder="Enter your mobile number"
+                className="border p-2 rounded w-full mb-3 text-gray-800"
                 value={formData.mobile}
                 onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
               />
 
-              <input type="text" placeholder="Your Goal (Ex: Retirement, Child Education)"
+              <label className="mb-1 block text-sm font-semibold text-gray-700" htmlFor="sip-step-up-goal">
+                Your Goal
+              </label>
+              <input
+                id="sip-step-up-goal"
+                type="text"
+                title="Your Goal"
+                placeholder="Ex: Retirement, Child Education"
                 className="border p-2 rounded w-full mb-3 text-gray-800"
                 value={formData.goal}
                 onChange={(e) => setFormData({ ...formData, goal: e.target.value })}

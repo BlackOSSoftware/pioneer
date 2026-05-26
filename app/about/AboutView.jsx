@@ -41,6 +41,28 @@ export default function AboutView({ about }) {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <h2 className="text-center text-2xl font-bold text-slate-900 sm:text-3xl">
+          {about.missionVisionHeading || "Our mission and vision"}
+        </h2>
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-700">
+              <IconByName name="Target" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900">{about.ourMissionTitle || "Our Mission"}</h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{about.ourMissionText}</p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-700">
+              <IconByName name="Eye" />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900">{about.ourVisionTitle || "Our Vision"}</h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600">{about.ourVisionText}</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <h2 className="text-center text-2xl font-bold text-slate-900 sm:text-3xl">{about.valuesHeading || "Our core values"}</h2>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {(about.values || []).map((item) => (

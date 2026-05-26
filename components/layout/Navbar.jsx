@@ -43,25 +43,40 @@ const PLANNER_LINKS = [
 ];
 
 /** Shared nav link style: underline aligned to text baseline */
-const navItemClass = (active) =>
-  `relative inline-flex items-center gap-1 pb-1.5 text-sm xl:text-[15px] font-medium transition-colors duration-200 ${
-    active ? "text-sky-700" : "text-slate-800 hover:text-sky-700"
+const navItemClass = (active, { menuOpen = false } = {}) => {
+  const on = active || menuOpen;
+  return `relative inline-flex items-center gap-1 pb-1.5 text-sm xl:text-[15px] font-medium transition-colors duration-200 ${
+    on ? "text-sky-700" : "text-slate-800 hover:text-sky-700"
   } after:pointer-events-none after:absolute after:left-0 after:bottom-0 after:h-[2px] after:rounded-sm after:bg-sky-700 after:transition-all after:duration-200 ${
-    active ? "after:w-full" : "after:w-0 hover:after:w-full"
+    on ? "after:w-full" : "after:w-0 hover:after:w-full"
+  }`;
+};
+
+const dropdownLinkClass = (active, { compact = false } = {}) =>
+  `block rounded-lg px-3 py-2 transition-colors duration-150 ${compact ? "text-xs" : "text-sm"} ${
+    active
+      ? "bg-sky-100 font-semibold text-sky-800"
+      : "text-slate-700 hover:bg-sky-50 hover:text-sky-700"
   }`;
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
   const [plannerOpen, setPlannerOpen] = useState(false);
+  const [calcDesktopOpen, setCalcDesktopOpen] = useState(false);
+  const [plannerDesktopOpen, setPlannerDesktopOpen] = useState(false);
 
   const pathname = usePathname() ?? "/";
   const normalizedPath = useMemo(() => pathname.toLowerCase(), [pathname]);
+  const calcSectionActive = normalizedPath.includes("/calculators");
+  const plannerSectionActive = normalizedPath.includes("/goal_planners");
 
   const closeAll = () => {
     setMenuOpen(false);
     setCalcOpen(false);
     setPlannerOpen(false);
+    setCalcDesktopOpen(false);
+    setPlannerDesktopOpen(false);
   };
 
   useEffect(() => {
@@ -70,6 +85,15 @@ export default function Navbar() {
       document.body.style.overflow = "";
     };
   }, [menuOpen]);
+
+  /** Close every menu when the route changes (Link click / back / forward). */
+  useEffect(() => {
+    setMenuOpen(false);
+    setCalcOpen(false);
+    setPlannerOpen(false);
+    setCalcDesktopOpen(false);
+    setPlannerDesktopOpen(false);
+  }, [pathname]);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
@@ -92,59 +116,92 @@ export default function Navbar() {
             </Link>
           ))}
 
-          {/* Desktop: hover / focus-within — pointer-events so gap under trigger still receives hover */}
-          <div className="group relative outline-none" tabIndex={0}>
+          {/* Desktop: vertical padding widens hover target; pathname effect closes after navigation */}
+          <div
+            className="relative -my-1.5 py-1.5"
+            onMouseEnter={() => setCalcDesktopOpen(true)}
+            onMouseLeave={() => setCalcDesktopOpen(false)}
+          >
             <button
               type="button"
-              className={`${navItemClass(normalizedPath.includes("/calculators"))} cursor-default border-0 bg-transparent p-0`}
+              className={`${navItemClass(calcSectionActive, { menuOpen: calcDesktopOpen })} cursor-default border-0 bg-transparent p-0`}
               aria-haspopup="true"
-              aria-expanded={false}
-              tabIndex={-1}
+              aria-expanded={calcDesktopOpen}
             >
               Calculators
-              <ChevronDown size={16} className="opacity-70 shrink-0" aria-hidden />
+              <ChevronDown
+                size={16}
+                className={`shrink-0 opacity-70 transition-transform duration-200 ${calcDesktopOpen ? "rotate-180" : ""}`}
+                aria-hidden
+              />
             </button>
-            <div className="pointer-events-none absolute right-0 top-full z-50 pt-1.5 opacity-0 transition-opacity duration-150 ease-out group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-              <ul className="max-h-80 w-80 overflow-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                {CALCULATOR_LINKS.map(([url, text]) => (
-                  <li key={url}>
-                    <Link
-                      href={`/Calculators/${url}`}
-                      onClick={closeAll}
-                      className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors duration-150 hover:bg-sky-50 hover:text-sky-700"
-                    >
-                      {text}
-                    </Link>
-                  </li>
-                ))}
+            <div
+              className={`absolute right-0 top-full z-50 pt-1.5 transition-opacity duration-150 ease-out ${
+                calcDesktopOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            >
+              {/* Invisible bridge so moving from trigger to panel does not close the menu */}
+              <div className="absolute left-0 right-0 top-0 h-2 -translate-y-full" aria-hidden />
+              <ul className="max-h-80 w-80 overflow-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl ring-1 ring-black/5">
+                {CALCULATOR_LINKS.map(([url, text]) => {
+                  const itemPath = `/calculators/${url}`.toLowerCase();
+                  const active = normalizedPath === itemPath;
+                  return (
+                    <li key={url}>
+                      <Link
+                        href={`/Calculators/${url}`}
+                        onClick={closeAll}
+                        className={dropdownLinkClass(active)}
+                      >
+                        {text}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
 
-          <div className="group relative outline-none" tabIndex={0}>
+          <div
+            className="relative -my-1.5 py-1.5"
+            onMouseEnter={() => setPlannerDesktopOpen(true)}
+            onMouseLeave={() => setPlannerDesktopOpen(false)}
+          >
             <button
               type="button"
-              className={`${navItemClass(normalizedPath.includes("/goal_planners"))} cursor-default border-0 bg-transparent p-0`}
+              className={`${navItemClass(plannerSectionActive, { menuOpen: plannerDesktopOpen })} cursor-default border-0 bg-transparent p-0`}
               aria-haspopup="true"
-              aria-expanded={false}
-              tabIndex={-1}
+              aria-expanded={plannerDesktopOpen}
             >
               Goal Planners
-              <ChevronDown size={16} className="opacity-70 shrink-0" aria-hidden />
+              <ChevronDown
+                size={16}
+                className={`shrink-0 opacity-70 transition-transform duration-200 ${plannerDesktopOpen ? "rotate-180" : ""}`}
+                aria-hidden
+              />
             </button>
-            <div className="pointer-events-none absolute right-0 top-full z-50 pt-1.5 opacity-0 transition-opacity duration-150 ease-out group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-              <ul className="w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                {PLANNER_LINKS.map(([url, text]) => (
-                  <li key={url}>
-                    <Link
-                      href={`/Goal_Planners/${url}`}
-                      onClick={closeAll}
-                      className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition-colors duration-150 hover:bg-sky-50 hover:text-sky-700"
-                    >
-                      {text}
-                    </Link>
-                  </li>
-                ))}
+            <div
+              className={`absolute right-0 top-full z-50 pt-1.5 transition-opacity duration-150 ease-out ${
+                plannerDesktopOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            >
+              <div className="absolute left-0 right-0 top-0 h-2 -translate-y-full" aria-hidden />
+              <ul className="w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl ring-1 ring-black/5">
+                {PLANNER_LINKS.map(([url, text]) => {
+                  const itemPath = `/goal_planners/${url}`.toLowerCase();
+                  const active = normalizedPath === itemPath;
+                  return (
+                    <li key={url}>
+                      <Link
+                        href={`/Goal_Planners/${url}`}
+                        onClick={closeAll}
+                        className={dropdownLinkClass(active)}
+                      >
+                        {text}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
@@ -193,7 +250,9 @@ export default function Navbar() {
               setCalcOpen((v) => !v);
               setPlannerOpen(false);
             }}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-800 hover:bg-slate-100"
+            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150 ${
+              calcSectionActive ? "bg-sky-50 text-sky-800" : "text-slate-800 hover:bg-slate-100"
+            } ${calcOpen ? "ring-1 ring-sky-200" : ""}`}
           >
             Calculators
             <ChevronDown size={16} className={`transition-transform duration-200 ${calcOpen ? "rotate-180" : ""}`} />
@@ -201,16 +260,20 @@ export default function Navbar() {
 
           <div className={`overflow-hidden transition-all duration-300 ${calcOpen ? "max-h-[520px]" : "max-h-0"}`}>
             <div className="space-y-1 pb-2 pl-2">
-              {CALCULATOR_LINKS.map(([url, text]) => (
-                <Link
-                  key={url}
-                  href={`/Calculators/${url}`}
-                  onClick={closeAll}
-                  className="block rounded-lg px-3 py-2 text-xs text-slate-700 transition-colors duration-150 hover:bg-sky-50 hover:text-sky-700"
-                >
-                  {text}
-                </Link>
-              ))}
+              {CALCULATOR_LINKS.map(([url, text]) => {
+                const itemPath = `/calculators/${url}`.toLowerCase();
+                const active = normalizedPath === itemPath;
+                return (
+                  <Link
+                    key={url}
+                    href={`/Calculators/${url}`}
+                    onClick={closeAll}
+                    className={dropdownLinkClass(active, { compact: true })}
+                  >
+                    {text}
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
@@ -220,7 +283,9 @@ export default function Navbar() {
               setPlannerOpen((v) => !v);
               setCalcOpen(false);
             }}
-            className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-800 hover:bg-slate-100"
+            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors duration-150 ${
+              plannerSectionActive ? "bg-sky-50 text-sky-800" : "text-slate-800 hover:bg-slate-100"
+            } ${plannerOpen ? "ring-1 ring-sky-200" : ""}`}
           >
             Goal Planners
             <ChevronDown size={16} className={`transition-transform duration-200 ${plannerOpen ? "rotate-180" : ""}`} />
@@ -228,16 +293,20 @@ export default function Navbar() {
 
           <div className={`overflow-hidden transition-all duration-300 ${plannerOpen ? "max-h-72" : "max-h-0"}`}>
             <div className="space-y-1 pb-2 pl-2">
-              {PLANNER_LINKS.map(([url, text]) => (
-                <Link
-                  key={url}
-                  href={`/Goal_Planners/${url}`}
-                  onClick={closeAll}
-                  className="block rounded-lg px-3 py-2 text-xs text-slate-700 transition-colors duration-150 hover:bg-sky-50 hover:text-sky-700"
-                >
-                  {text}
-                </Link>
-              ))}
+              {PLANNER_LINKS.map(([url, text]) => {
+                const itemPath = `/goal_planners/${url}`.toLowerCase();
+                const active = normalizedPath === itemPath;
+                return (
+                  <Link
+                    key={url}
+                    href={`/Goal_Planners/${url}`}
+                    onClick={closeAll}
+                    className={dropdownLinkClass(active, { compact: true })}
+                  >
+                    {text}
+                  </Link>
+                );
+              })}
             </div>
           </div>
 

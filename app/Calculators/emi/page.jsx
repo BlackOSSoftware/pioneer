@@ -14,6 +14,8 @@ import {
     CategoryScale,
     LinearScale,
     BarElement,
+    BarController,
+    LineController,
     PointElement,
     LineElement,
     TimeScale,
@@ -27,6 +29,8 @@ ChartJS.register(
     CategoryScale,
     LinearScale,
     BarElement,
+    BarController,
+    LineController,
     PointElement,
     LineElement,
     TimeScale,
@@ -35,7 +39,7 @@ ChartJS.register(
 
 export default function HomeLoanEMIPage() {
 
-    const [loan, setLoan] = useState();
+    const [loan, setLoan] = useState(0);
     const [rate, setRate] = useState(12.5);
     const [tenure, setTenure] = useState(20);
     const [tenureMode, setTenureMode] = useState("years");
@@ -63,18 +67,23 @@ export default function HomeLoanEMIPage() {
     const monthlyRate = useMemo(() => rate / 12 / 100, [rate]);
 
     const EMI = useMemo(() => {
-        if (monthlyRate <= 0) return loan / months;
+        const principal = Number(loan);
+        if (!Number.isFinite(principal) || principal <= 0) return 0;
+        if (monthlyRate <= 0) return principal / months;
         const x = Math.pow(1 + monthlyRate, months);
-        return (loan * monthlyRate * x) / (x - 1);
+        if (!Number.isFinite(x) || x <= 1) return 0;
+        return (principal * monthlyRate * x) / (x - 1);
     }, [loan, monthlyRate, months]);
 
+    const principalNum = Number.isFinite(Number(loan)) ? Math.max(0, Number(loan)) : 0;
     const totalPayment = EMI * months;
-    const totalInterest = totalPayment - loan;
+    const totalInterest = Math.max(0, totalPayment - principalNum);
 
 
     const schedule = useMemo(() => {
         const rows = [];
-        let balance = loan;
+        if (!Number.isFinite(principalNum) || principalNum <= 0) return [];
+        let balance = principalNum;
 
         for (let m = 1; m <= months; m++) {
             const interestPart = balance * monthlyRate;
@@ -118,7 +127,7 @@ export default function HomeLoanEMIPage() {
                     endBalance: yearsMap[y][yearsMap[y].length - 1].balance
                 }
             }));
-    }, [loan, monthlyRate, EMI, months]);
+    }, [principalNum, monthlyRate, EMI, months]);
 
     const handleSubmitForm = async () => {
         const { name, email, mobile, goal, calculatorType } = formData;
@@ -211,13 +220,13 @@ export default function HomeLoanEMIPage() {
             labels: ["Principal", "Interest"],
             datasets: [
                 {
-                    data: [loan, totalInterest],
+                    data: [principalNum || 0, totalInterest || 0],
                     backgroundColor: ["#93C5FD", "#3B82F6"],
                     borderWidth: 0
                 }
             ]
         };
-    }, [loan, totalInterest]);
+    }, [principalNum, totalInterest]);
 
 
     const fmt = (v) => `₹ ${Math.round(v).toLocaleString("en-IN")}`;

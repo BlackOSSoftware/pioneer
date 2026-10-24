@@ -1,54 +1,125 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Mail,
+  Phone,
+  Trash2,
+  RefreshCw,
+  Search,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Target,
+  Calculator,
+  Calendar,
+  Users,
+} from "lucide-react";
 import { showAppModal, confirmAppModal } from "@/lib/pioneer-modal-bus";
+
+const PAGE_SIZE = 10;
+
+function formatWhen(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return String(iso);
+  }
+}
+
+function csvEscape(v) {
+  const s = String(v ?? "");
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState([]);
-  const [originalLeads, setOriginalLeads] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [q, setQ] = useState("");
+  const [qDebounced, setQDebounced] = useState("");
+  const [calculatorType, setCalculatorType] = useState("all");
+  const [calculatorTypes, setCalculatorTypes] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false,
+  });
+  const abortRef = useRef(null);
 
-  /* ================= FETCH LEADS ================= */
-  const fetchLeads = async () => {
+  useEffect(() => {
+    const t = setTimeout(() => setQDebounced(q.trim()), 350);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [qDebounced, calculatorType]);
+
+  const fetchLeads = useCallback(async () => {
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await fetch("/api/leads");
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(PAGE_SIZE),
+      });
+      if (qDebounced) params.set("q", qDebounced);
+      if (calculatorType && calculatorType !== "all") {
+        params.set("calculatorType", calculatorType);
+      }
+
+      const res = await fetch(`/api/leads?${params}`, { signal: controller.signal });
       const data = await res.json();
 
-      if (data.success) {
-        setLeads(data.leads);
-        setOriginalLeads(data.leads);
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to fetch leads");
+      }
+
+      setLeads(data.leads || []);
+      setPagination(
+        data.pagination || {
+          page: 1,
+          limit: PAGE_SIZE,
+          total: 0,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }
+      );
+      if (Array.isArray(data.filters?.calculatorTypes)) {
+        setCalculatorTypes(data.filters.calculatorTypes);
       }
     } catch (err) {
-      showAppModal("Failed to fetch leads.", { variant: "error" });
+      if (err?.name === "AbortError") return;
+      showAppModal(err.message || "Failed to fetch leads.", { variant: "error" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, qDebounced, calculatorType]);
 
   useEffect(() => {
-    fetchLeads();
-  }, []);
+    void fetchLeads();
+    return () => abortRef.current?.abort();
+  }, [fetchLeads]);
 
-  /* ================= SEARCH ================= */
-  const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase();
-
-    if (!value.trim()) {
-      setLeads(originalLeads);
-      return;
-    }
-
-    setLeads(
-      originalLeads.filter(
-        (l) =>
-          l.name.toLowerCase().includes(value) ||
-          l.email.toLowerCase().includes(value)
-      )
-    );
-  };
-
-  /* ================= DELETE ================= */
   const deleteLead = async (id) => {
     const ok = await confirmAppModal("Delete this lead? This cannot be undone.", {
       title: "Delete lead",
@@ -57,164 +128,327 @@ export default function LeadsPage() {
     });
     if (!ok) return;
 
-    await fetch(`/api/leads?id=${id}`, { method: "DELETE" });
-    setLeads((prev) => prev.filter((l) => l._id !== id));
+    try {
+      const res = await fetch(`/api/leads?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Delete failed");
+
+      // If last item on page, go back a page
+      if (leads.length === 1 && page > 1) {
+        setPage((p) => p - 1);
+      } else {
+        void fetchLeads();
+      }
+    } catch (err) {
+      showAppModal(err.message || "Could not delete lead.", { variant: "error" });
+    }
   };
 
-  /* ================= EXPORT CSV ================= */
-  const exportCSV = () => {
-    const csv = leads
-      .map(
-        (l) =>
-          `${l.name},${l.email},${l.mobile},${l.goal},${l.calculatorType}`
-      )
-      .join("\n");
+  const exportCSV = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams({ export: "1" });
+      if (qDebounced) params.set("q", qDebounced);
+      if (calculatorType && calculatorType !== "all") {
+        params.set("calculatorType", calculatorType);
+      }
 
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
+      const res = await fetch(`/api/leads?${params}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Export failed");
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "leads.csv";
-    a.click();
+      const rows = data.leads || [];
+      const header = ["Name", "Email", "Mobile", "Goal", "Calculator", "Date"];
+      const body = rows.map((l) =>
+        [
+          csvEscape(l.name),
+          csvEscape(l.email),
+          csvEscape(l.mobile),
+          csvEscape(l.goal),
+          csvEscape(l.calculatorType),
+          csvEscape(l.createdAt ? new Date(l.createdAt).toISOString() : ""),
+        ].join(",")
+      );
+
+      const blob = new Blob([[header.join(","), ...body].join("\n")], {
+        type: "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `calculator-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showAppModal(err.message || "Could not export CSV.", { variant: "error" });
+    } finally {
+      setExporting(false);
+    }
   };
+
+  const from = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
+  const to = Math.min(pagination.page * pagination.limit, pagination.total);
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200">
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+              Calculator leads
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              PDF download form submissions from all calculators.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void fetchLeads()}
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+            >
+              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={() => void exportCSV()}
+              disabled={exporting || pagination.total === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0a2744] px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0d3a5c] disabled:opacity-60"
+            >
+              <Download size={15} />
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+          </div>
+        </div>
 
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">
-          All Leads
-        </h2>
+        {/* Stats + filters */}
+        <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2 text-sm text-slate-700">
+            <Users size={15} className="text-sky-700" />
+            <span className="font-semibold text-slate-900">{pagination.total}</span>
+            <span className="text-slate-500">total leads</span>
+          </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            onChange={handleSearch}
-            className="
-              border border-gray-300
-              bg-white
-              text-gray-900
-              px-3 py-2 rounded-lg text-sm w-64
-              focus:outline-none focus:ring-2 focus:ring-blue-500
-            "
-          />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select
+              value={calculatorType}
+              onChange={(e) => setCalculatorType(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition focus:border-sky-600 focus:bg-white focus:ring-4 focus:ring-sky-100"
+            >
+              <option value="all">All calculators</option>
+              {calculatorTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
 
-          <button
-            onClick={fetchLeads}
-            className="
-              bg-gray-200
-              text-gray-800
-              px-4 py-2 rounded-lg text-sm
-              hover:bg-blue-600 hover:text-white
-              transition
-            "
-          >
-            🔄 Refresh
-          </button>
+            <div className="relative w-full sm:w-72">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search name, email, mobile, goal…"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-sky-600 focus:bg-white focus:ring-4 focus:ring-sky-100"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* TABLE */}
+      {/* Content */}
       {loading ? (
-        <p className="text-gray-600">Loading...</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+          Loading leads…
+        </div>
+      ) : leads.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
+          <Calculator className="mx-auto text-slate-300" size={32} />
+          <p className="mt-3 text-sm font-medium text-slate-700">No leads found</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {pagination.total === 0 && !qDebounced && calculatorType === "all"
+              ? "Leads appear when someone downloads a calculator PDF."
+              : "Try another search or calculator filter."}
+          </p>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border border-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                {[
-                  "Name",
-                  "Email",
-                  "Mobile",
-                  "Goal",
-                  "Calculator",
-                  "Date",
-                  "Action",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="p-2 border border-gray-200 text-left"
+        <>
+          {/* Desktop table */}
+          <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/90 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th className="px-5 py-3.5">Lead</th>
+                    <th className="px-4 py-3.5">Contact</th>
+                    <th className="px-4 py-3.5">Goal</th>
+                    <th className="px-4 py-3.5">Calculator</th>
+                    <th className="px-4 py-3.5">Date</th>
+                    <th className="px-5 py-3.5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {leads.map((l) => (
+                    <tr key={l._id} className="transition hover:bg-slate-50/70">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2.5">
+                          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#0a2744]/8 text-[#0a2744]">
+                            <User size={15} />
+                          </span>
+                          <span className="font-semibold text-slate-900">{l.name || "—"}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="space-y-1">
+                          {l.email ? (
+                            <a
+                              href={`mailto:${l.email}`}
+                              className="flex items-center gap-1.5 text-sky-700 hover:underline"
+                            >
+                              <Mail size={13} />
+                              {l.email}
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                          {l.mobile ? (
+                            <a
+                              href={`tel:${l.mobile}`}
+                              className="flex items-center gap-1.5 text-slate-600 hover:underline"
+                            >
+                              <Phone size={13} />
+                              {l.mobile}
+                            </a>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="inline-flex items-start gap-1.5 text-slate-700">
+                          <Target size={13} className="mt-0.5 shrink-0 text-slate-400" />
+                          {l.goal || "—"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="inline-flex rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800 ring-1 ring-inset ring-sky-100">
+                          {l.calculatorType || "Calculator"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-slate-600">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Calendar size={13} className="text-slate-400" />
+                          {formatWhen(l.createdAt)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => void deleteLead(l._id)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                        >
+                          <Trash2 size={13} />
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="space-y-3 md:hidden">
+            {leads.map((l) => (
+              <article
+                key={l._id}
+                className="rounded-2xl border border-slate-200 border-l-4 border-l-sky-500 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-slate-900">{l.name || "—"}</p>
+                    <span className="mt-1 inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
+                      {l.calculatorType || "Calculator"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void deleteLead(l._id)}
+                    className="rounded-lg border border-rose-200 bg-rose-50 p-2 text-rose-700"
+                    aria-label="Delete"
                   >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {leads.map((l) => (
-                <tr
-                  key={l._id}
-                  className="hover:bg-gray-50 transition"
-                >
-                  <td className="p-2 border border-gray-200 text-gray-900">
-                    {l.name}
-                  </td>
-
-                  <td className="p-2 border border-gray-200 text-gray-700">
-                    {l.email}
-                  </td>
-
-                  <td className="p-2 border border-gray-200">
-                    <a
-                      href={`tel:${l.mobile}`}
-                      className="text-blue-600 underline"
-                    >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                <div className="mt-3 space-y-1.5 text-sm">
+                  {l.email ? (
+                    <a href={`mailto:${l.email}`} className="flex items-center gap-1.5 text-sky-700">
+                      <Mail size={13} />
+                      {l.email}
+                    </a>
+                  ) : null}
+                  {l.mobile ? (
+                    <a href={`tel:${l.mobile}`} className="flex items-center gap-1.5 text-slate-700">
+                      <Phone size={13} />
                       {l.mobile}
                     </a>
-                  </td>
+                  ) : null}
+                  {l.goal ? (
+                    <p className="flex items-start gap-1.5 text-slate-600">
+                      <Target size={13} className="mt-0.5 shrink-0" />
+                      {l.goal}
+                    </p>
+                  ) : null}
+                  <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <Calendar size={12} />
+                    {formatWhen(l.createdAt)}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
 
-                  <td className="p-2 border border-gray-200 text-gray-700">
-                    {l.goal}
-                  </td>
-
-                  <td className="p-2 border border-gray-200 text-gray-700">
-                    {l.calculatorType}
-                  </td>
-
-                  <td className="p-2 border border-gray-200 text-gray-700">
-                    {new Date(l.createdAt).toLocaleDateString()}
-                  </td>
-
-                  <td className="p-2 border border-gray-200">
-                    <button
-                      onClick={() => deleteLead(l._id)}
-                      className="
-                        bg-red-500 hover:bg-red-600
-                        text-white px-3 py-1 rounded text-xs
-                        transition
-                      "
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {leads.length === 0 && (
-            <p className="text-center text-gray-500 py-6">
-              No leads found
+          {/* Pagination */}
+          <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:px-5">
+            <p className="text-sm text-slate-600">
+              Showing{" "}
+              <span className="font-semibold text-slate-900">
+                {from}–{to}
+              </span>{" "}
+              of <span className="font-semibold text-slate-900">{pagination.total}</span>
             </p>
-          )}
-        </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={!pagination.hasPrev || loading}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <ChevronLeft size={16} />
+                Prev
+              </button>
+              <span className="min-w-[5.5rem] text-center text-sm font-semibold text-slate-800">
+                Page {pagination.page} / {pagination.totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={!pagination.hasNext || loading}
+                onClick={() => setPage((p) => p + 1)}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        </>
       )}
-
-      {/* EXPORT */}
-      <button
-        onClick={exportCSV}
-        className="
-          mt-4 bg-green-600 hover:bg-green-700
-          text-white px-4 py-2 rounded-lg text-sm
-          transition
-        "
-      >
-        Export CSV
-      </button>
     </div>
   );
 }

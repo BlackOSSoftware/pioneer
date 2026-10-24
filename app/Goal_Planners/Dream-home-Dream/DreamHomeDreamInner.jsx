@@ -1,163 +1,110 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import {
+  GoalPlannerShell,
+  GoalCard,
+  GoalMetricGrid,
+  GoalPrimaryButton,
+  GoalResultPanel,
+} from "@/components/goal-planners/GoalPlannerShell";
+import {
+  inflateAmount,
+  requiredMonthlySip,
+  riskReturn,
+  formatGoalINR,
+} from "@/lib/goal-planner-math";
 
 export default function DreamHomeDreamInner() {
   const search = useSearchParams();
   const router = useRouter();
 
-  const age = Number(search.get("age") || 0);
+  const years = Number(search.get("age") || 0);
   const cost = Number(search.get("cost") || 0);
   const inflation = Number(search.get("inflation") || 0);
+  const goal = search.get("goal") || "Dream Home";
+  const risk = search.get("risk") || "Moderate";
 
-  // POPUP STATE
-  const [showModal, setShowModal] = useState(false);
+  const expectedReturn = riskReturn(risk);
 
-  /* ------------ CALCULATIONS ------------ */
-  const futureValue = useMemo(() => {
-    if (!cost || !age) return 0;
-    return Math.round(cost * Math.pow(1 + inflation / 100, age));
-  }, [cost, age, inflation]);
+  const futureValue = useMemo(
+    () => inflateAmount(cost, inflation, years),
+    [cost, inflation, years]
+  );
 
-  const monthlySIP = useMemo(() => {
-    if (!futureValue || !age) return 0;
-    return Math.round(futureValue / (age * 12));
-  }, [futureValue, age]);
+  const sip = useMemo(
+    () => requiredMonthlySip(futureValue, years, expectedReturn),
+    [futureValue, years, expectedReturn]
+  );
+
+  const continueToSummary = () => {
+    const q = new URLSearchParams({
+      investmentType: "SIP",
+      risk,
+      years: String(years),
+      futureValue: String(futureValue),
+      sip: String(sip),
+      cost: String(cost),
+      inflation: String(inflation),
+      goal,
+    }).toString();
+
+    router.push(`/Goal_Planners/Dream-home-Summary?${q}`);
+  };
 
   return (
-    <div className="w-full bg-white">
-<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
-        
-      </section>
+    <GoalPlannerShell
+      title="Goal"
+      highlight="summary"
+      breadcrumb="Dream Home"
+      description={`Projected corpus and SIP for “${goal}” over ${years || "—"} years at a ${risk.toLowerCase()} risk profile (~${expectedReturn}% p.a.).`}
+    >
+      <div className="space-y-6">
+        <GoalCard title="Key projections">
+          <GoalMetricGrid
+            items={[
+              ["Target (today’s value)", formatGoalINR(cost)],
+              [`Future value (${inflation}% inflation)`, formatGoalINR(futureValue)],
+              ["Years to save", String(years || 0)],
+              ["Monthly SIP required", formatGoalINR(sip)],
+            ]}
+          />
+        </GoalCard>
 
+        <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
+          <GoalResultPanel
+            title="Plan snapshot"
+            rows={[
+              ["Goal name", goal],
+              ["Risk profile", `${risk} (~${expectedReturn}% p.a.)`],
+              ["Inflation assumed", `${inflation}% p.a.`],
+              ["Horizon", `${years} years`],
+              ["Required monthly SIP", formatGoalINR(sip)],
+            ]}
+          />
 
-      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
-        <h1 className="text-4xl font-semibold text-white-900 mb-2">
-          Goal<span className="text-yellow-300"> Summary</span>
-        </h1>
-      </section>
-
-
-      <section className="w-full py-12 flex justify-center">
-        <div className="max-w-6xl w-full p-8 bg-white rounded-xl shadow-lg">
-
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-
-            <div className="bg-white rounded-xl shadow text-center border border-gray-200 py-6">
-              <div className="text-3xl font-bold">₹ {cost.toLocaleString()}</div>
-              <div className="mt-4 bg-[#3B82F6] text-white py-3 rounded-md text-sm transform hover:scale-105 transition object-cover">
-                Your Targeted Amount <br /> (in today's value)
-              </div>
-            </div>
-
-
-            <div className="bg-white rounded-xl shadow text-center border border-gray-200 py-6">
-              <div className="text-3xl font-bold">₹ {futureValue.toLocaleString()}</div>
-              <div className="mt-4 bg-[#3B82F6] text-white py-3 rounded-md text-sm transform hover:scale-105 transition object-cover">
-                Future value of your Dream Home <br />
-                (adjusting for {inflation}% inflation)
-              </div>
-            </div>
-
-
-            <div className="bg-white rounded-xl shadow text-center border border-gray-200 py-6">
-              <div className="text-3xl font-bold">{age}</div>
-              <div className="mt-4 bg-[#3B82F6] text-white py-3 rounded-md text-sm transform hover:scale-105 transition object-cover">
-                Number of Years <br /> You Need To Save
-              </div>
-            </div>
-
-
-            <div className="bg-white rounded-xl shadow text-center border border-gray-200 py-6">
-              <div className="text-3xl font-bold">₹ {monthlySIP.toLocaleString()}</div>
-              <div className="mt-4 bg-[#3B82F6] text-white py-3 rounded-md text-sm transform hover:scale-105 transition object-cover">
-                Monthly SIP Investment <br /> Required
-              </div>
-            </div>
-          </div>
-
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-
-
-            <div
-              onClick={() => setShowModal(true)}
-              className="bg-[#3B82F6] text-white rounded-xl shadow text-center py-8 cursor-pointer hover:opacity-90 transition"
-            >
-              <p className="font-bold text-lg">Are you an existing client?</p>
-              <p className="mt-3 text-sm">
-                If yes, please click here and map your existing investments to this goal
-              </p>
-            </div>
-
-
-            <div
-              onClick={() =>
-                router.push(
-                  `/Goal_Planners/Dream-home-Summary?investmentType=SIP&risk=${"Conservative"}&years=${age}&futureValue=${futureValue}&sip=${monthlySIP}`
-                )
-              }
-
-              className="border border-[#3B82F6] bg-[#F8FFF1] rounded-xl shadow text-center py-8 cursor-pointer hover:bg-[#eefbe0] transition"
-            >
-              <p className="font-bold text-lg text-[#3B82F6]">
-                No, I do not have investments with you
-              </p>
-              <p className="mt-3 text-sm text-gray-700">
-                Take me to the plan without mapping any existing investments
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= LOGIN POPUP ================= */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center">
-          <div className="bg-white rounded-lg w-[420px] shadow-xl overflow-hidden">
-
-            {/* POPUP HEADER */}
-            <div className="bg-[#00597A] text-white px-6 py-3 text-lg font-semibold">
-              Login
-            </div>
-
-            {/* INPUT AREA */}
-            <div className="p-6">
-              <label className="text-gray-700 font-medium">PAN Number:</label>
-              <input
-                type="text"
-                className="w-full border mt-1 mb-5 rounded px-3 py-2 border-gray-300"
-              />
-
-              <label className="text-gray-700 font-medium">Password:</label>
-              <input
-                type="password"
-                className="w-full border mt-1 rounded px-3 py-2 border-gray-300"
-              />
-            </div>
-
-            <hr />
-
-            {/* FOOTER BUTTONS */}
-            <div className="flex justify-end gap-3 px-6 py-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-5 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          <GoalCard title="Continue">
+            <p className="text-sm leading-relaxed text-slate-600">
+              Continue to your dream home plan to see invested amount vs growth, a sample fund
+              mix, and download a one-page PDF report. To map existing investments to this goal,
+              please contact your Pioneer advisor.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              <GoalPrimaryButton onClick={continueToSummary}>
+                Continue without mapping investments
+              </GoalPrimaryButton>
+              <Link
+                href="/Goal_Planners/Dream-home"
+                className="text-sm font-semibold text-[#071a2e] underline-offset-2 hover:underline"
               >
-                Close
-              </button>
-
-              <button className="px-5 py-2 bg-[#004F6E] text-white rounded hover:bg-[#003f58]">
-                Login
-              </button>
+                Edit inputs
+              </Link>
             </div>
-          </div>
+          </GoalCard>
         </div>
-      )}
-      {/* ================ END POPUP ================ */}
-    </div>
+      </div>
+    </GoalPlannerShell>
   );
 }

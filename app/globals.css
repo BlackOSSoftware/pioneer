@@ -13,16 +13,20 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
   min-height: 100%;
+  min-width: 0;
   overflow-x: clip;
-}
-
-html {
-  scroll-behavior: smooth;
+  width: 100%;
 }
 
 body {
@@ -30,6 +34,15 @@ body {
   color: var(--foreground);
   font-family: "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
 }
 
 a {
@@ -44,10 +57,49 @@ a {
 
 main {
   isolation: isolate;
+  min-width: 0;
+  width: 100%;
+  overflow-x: clip;
+}
+
+/* Safe horizontal padding helper for 320px+ pages */
+.page-pad {
+  padding-left: max(0.75rem, env(safe-area-inset-left));
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+}
+
+@media (min-width: 640px) {
+  .page-pad {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
 }
 
 .section-surface {
   border: 1px solid #e2e8f0;
   background: var(--surface);
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+}
+
+/* Prevent long calculator/hero titles from blowing 320px layout */
+h1,
+h2,
+h3 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Shared calculator page atmosphere */
+.calc-page {
+  background:
+    radial-gradient(ellipse 80% 45% at 100% 0%, rgba(14, 116, 144, 0.1), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 30%, rgba(7, 26, 46, 0.05), transparent 45%),
+    linear-gradient(180deg, #e8eef5 0%, #f8fafc 35%, #f1f5f9 100%);
+}
+
+.goal-page {
+  background:
+    radial-gradient(ellipse 80% 45% at 0% 0%, rgba(14, 116, 144, 0.1), transparent 50%),
+    radial-gradient(ellipse 55% 40% at 100% 40%, rgba(7, 26, 46, 0.06), transparent 45%),
+    linear-gradient(180deg, #e8eef5 0%, #f8fafc 40%, #eef6ff 100%);
 }

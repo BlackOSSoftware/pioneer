@@ -1,134 +1,155 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { showAppModal } from "@/lib/pioneer-modal-bus";
+import {
+  GoalPlannerShell,
+  GoalCard,
+  GoalField,
+  GoalInput,
+  GoalSelect,
+  GoalPrimaryButton,
+} from "@/components/goal-planners/GoalPlannerShell";
+import { riskReturn } from "@/lib/goal-planner-math";
+
+const RISK_OPTIONS = [
+  { value: "Conservative", label: "Conservative" },
+  { value: "Moderate", label: "Moderate" },
+  { value: "Aggressive", label: "Aggressive" },
+];
 
 export default function WealthCreationPage() {
   const router = useRouter();
-
-  const [age, setAge] = useState("");
+  const [currentAge, setCurrentAge] = useState("");
   const [amount, setAmount] = useState("");
   const [afterYears, setAfterYears] = useState("");
-  const [inflation, setInflation] = useState("");
+  const [inflation, setInflation] = useState("6");
   const [returns, setReturns] = useState("");
-  const [risk, setRisk] = useState("Conservative");
+  const [risk, setRisk] = useState("Moderate");
 
-  const handleSubmit = () => {
-    if (!age || !amount || !afterYears || !inflation || !returns) {
-      showAppModal("Please fill all fields", { variant: "info", title: "Required fields" });
+  const handleBuild = () => {
+    if (!currentAge || !amount || !afterYears || inflation === "") {
+      showAppModal("Please fill age, target amount, years, and inflation.", {
+        variant: "info",
+        title: "Required fields",
+      });
+      return;
+    }
+    if (Number(amount) <= 0 || Number(afterYears) <= 0) {
+      showAppModal("Target amount and years must be greater than zero.", {
+        variant: "info",
+        title: "Invalid values",
+      });
       return;
     }
 
-    router.push(
-      `/Goal_Planners/Wealth_Dream?age=${afterYears}&cost=${amount}&inflation=${inflation}&returns=${returns}&risk=${risk}`
-    );
+    const q = new URLSearchParams({
+      age: String(afterYears),
+      cost: String(amount),
+      inflation: String(inflation),
+      returns: returns === "" ? "" : String(returns),
+      risk,
+      currentAge: String(currentAge),
+    }).toString();
+
+    router.push(`/Goal_Planners/Wealth_Dream?${q}`);
   };
 
+  const impliedReturn = returns === "" ? riskReturn(risk) : Number(returns);
+
   return (
-    <div className="w-full bg-white">
-<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
-        
-      </section>
-
-      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
-        <div className="max-w-6xl mx-auto text-center px-4">
-
-          <h1 className="text-4xl font-semibold text-white-900 mb-2">
-            Wealth <span className="text-yellow-300">Creation</span>
-          </h1>
-
-          <div className="flex justify-center gap-2 text-sm text-white-600">
-            <Link href="/">Home</Link>
-            <span className="text-white-400">/</span>
-            <span>Goal</span>
-            <span className="text-white-400">/</span>
-            <span className="text-[white] font-medium">Wealth Creation</span>
-          </div>
-
-        </div>
-      </section>
-
-      <section className="w-full py-16 flex justify-center">
-        <div className="bg-white rounded-xl shadow-2xl p-12 max-w-6xl w-full">
-          <div className="text-gray-700 text-[18px] leading-relaxed space-y-14">
-
-            <p className="text-center">
-              You are
-              <input
-                type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                placeholder="Years"
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-24 text-center pb-1"
-              />
-              years old now you require Rs
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Amount"
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-40 text-center pb-1"
-              />
-              at today's value after
-              <input
-                type="number"
-                value={afterYears}
-                onChange={(e) => setAfterYears(e.target.value)}
-                placeholder="Years"
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-20 text-center pb-1"
-              />
-              years
-            </p>
-
-            <p className="text-center">
-              for becoming wealthy. You assume the inflation to be
-              <input
-                type="number"
-                value={inflation}
-                onChange={(e) => setInflation(e.target.value)}
-                placeholder="%"
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-20 text-center pb-1"
-              />
-              % and expect
-              <input
-                type="number"
-                value={returns}
-                onChange={(e) => setReturns(e.target.value)}
-                placeholder="%"
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-20 text-center pb-1"
-              />
-              % return on your investments.
-            </p>
-
-            <p className="text-center">
-              You can take
-              <select
-                value={risk}
-                onChange={(e) => setRisk(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none pb-1 bg-transparent text-center"
+    <GoalPlannerShell
+      title="Wealth"
+      highlight="Creation"
+      breadcrumb="Wealth Creation"
+      description="Plan a corpus in today’s value, inflate it to your horizon, and estimate the monthly SIP needed."
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <GoalCard title="Your inputs">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <GoalField label="Current age">
+                <GoalInput
+                  type="number"
+                  min={18}
+                  max={100}
+                  value={currentAge}
+                  onChange={setCurrentAge}
+                  placeholder="e.g. 32"
+                />
+              </GoalField>
+              <GoalField label="Target amount today (₹)">
+                <GoalInput
+                  type="number"
+                  min={0}
+                  value={amount}
+                  onChange={setAmount}
+                  placeholder="e.g. 5000000"
+                />
+              </GoalField>
+              <GoalField label="Years to goal">
+                <GoalInput
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={afterYears}
+                  onChange={setAfterYears}
+                  placeholder="e.g. 15"
+                />
+              </GoalField>
+              <GoalField label="Expected inflation (% p.a.)">
+                <GoalInput
+                  type="number"
+                  min={0}
+                  max={20}
+                  step={0.1}
+                  value={inflation}
+                  onChange={setInflation}
+                  placeholder="e.g. 6"
+                />
+              </GoalField>
+              <GoalField
+                label="Expected return (% p.a.)"
+                hint={`Optional. Leave blank to use ${riskReturn(risk)}% from your risk profile.`}
               >
-                <option value="Conservative">Conservative</option>
-                <option value="Moderate">Moderate</option>
-                <option value="Aggressive">Aggressive</option>
-              </select>
-              risk with your investments.
-            </p>
-
-            <div className="text-center pt-6">
-              <button
-                onClick={handleSubmit}
-                className="px-12 py-3 bg-blue-900 text-white rounded-md font-semibold hover:bg-blue-800 transition"
-              >
-                Build My Goal
-              </button>
+                <GoalInput
+                  type="number"
+                  min={0}
+                  max={30}
+                  step={0.1}
+                  value={returns}
+                  onChange={setReturns}
+                  placeholder={`Default ${riskReturn(risk)}`}
+                />
+              </GoalField>
+              <GoalField label="Risk profile">
+                <GoalSelect value={risk} onChange={setRisk} options={RISK_OPTIONS} />
+              </GoalField>
             </div>
-
-          </div>
+            <p className="mt-4 text-xs text-slate-500">
+              Illustrative return used for SIP: <strong>{impliedReturn || 0}% p.a.</strong>
+            </p>
+            <div className="mt-6">
+              <GoalPrimaryButton onClick={handleBuild}>Build my goal</GoalPrimaryButton>
+            </div>
+          </GoalCard>
         </div>
-      </section>
 
-    </div>
+        <div className="lg:col-span-2">
+          <GoalCard title="How it works">
+            <ul className="space-y-3 text-sm leading-relaxed text-slate-600">
+              <li>Enter the wealth target in today&apos;s rupees and your investment horizon.</li>
+              <li>We inflate the target to a future value using your inflation assumption.</li>
+              <li>
+                Required SIP compounds at your expected return (or the return implied by risk
+                profile).
+              </li>
+              <li>Download a branded one-page PDF after reviewing the plan.</li>
+            </ul>
+          </GoalCard>
+        </div>
+      </div>
+    </GoalPlannerShell>
   );
 }

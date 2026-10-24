@@ -5,7 +5,13 @@ import WeddingDreamInner from "./WeddingDreamInner";
 
 export default function Page() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-500">
+          Loading goal preview…
+        </div>
+      }
+    >
       <WeddingDreamInner />
     </Suspense>
   );

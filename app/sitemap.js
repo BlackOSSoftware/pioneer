@@ -1,16 +1,18 @@
-export default function sitemap() {
-  const baseUrl = "https://www.pioneerws.in";
+import { getPublicSitemapPaths, SITE_URL } from "@/lib/seo";
 
-  return [
-    { url: baseUrl, lastModified: new Date() },
-    { url: `${baseUrl}/About`, lastModified: new Date() },
-    { url: `${baseUrl}/Services`, lastModified: new Date() },
-    { url: `${baseUrl}/Products`, lastModified: new Date() },
-    { url: `${baseUrl}/Insurance`, lastModified: new Date() },
-    { url: `${baseUrl}/financial-planning`, lastModified: new Date() },
-    { url: `${baseUrl}/Calculators/sip-return`, lastModified: new Date() },
-    { url: `${baseUrl}/Goal_Planners/Dream-home`, lastModified: new Date() },
-    { url: `${baseUrl}/contact`, lastModified: new Date() },
-    { url: `${baseUrl}/login`, lastModified: new Date() },
-  ];
+export default function sitemap() {
+  const now = new Date();
+
+  return getPublicSitemapPaths().map((path) => {
+    const url = path === "/" ? SITE_URL : `${SITE_URL}${path}`;
+    const isHome = path === "/";
+    const isTool = path.includes("/Calculators/") || path.includes("/Goal_Planners/");
+
+    return {
+      url,
+      lastModified: now,
+      changeFrequency: isHome ? "weekly" : isTool ? "monthly" : "monthly",
+      priority: isHome ? 1 : isTool ? 0.8 : 0.7,
+    };
+  });
 }

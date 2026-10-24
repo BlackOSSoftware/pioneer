@@ -1,8 +1,7 @@
 "use client";
 
-
-import React, { useMemo, useRef, useState } from "react";
-import jsPDF from "jspdf";
+import "@/lib/chartjs-fix";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -11,41 +10,42 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  PointElement,
-  LineElement,
+  BarController,
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
-import { showAppModal } from "@/lib/pioneer-modal-bus";
-import Link from "next/link";
+import { DISPLAY_CHART_OPTIONS, DISPLAY_PIE_OPTIONS } from "@/lib/chart-pdf-options";
+import { submitCalculatorLeadAndDownloadPdf } from "@/lib/calculator-pdf-submit";
+import CalculatorDownloadForm from "@/components/calculators/CalculatorDownloadForm";
+import {
+  CalculatorShell,
+  CalcCard,
+  FieldLabel,
+  MoneyInput,
+  NumberField,
+  RangeField,
+  SliderMarks,
+  ResultPanel,
+  DownloadButton,
+  ChartPanel,
+  formatINR,
+  clamp,
+} from "@/components/calculators/CalculatorShell";
+import {
+  createPremiumCalculatorPdf,
+  formatPdfMoney,
+  getChartCanvas,
+  canvasToPdfJpeg,
+} from "@/lib/pdf-branded";
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement
-);
-
-
-const formatNum = (num) => {
-  if (!num || isNaN(num)) return "₹ 0";
-  return "₹ " + num.toLocaleString("en-IN");
-};
-
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, BarController);
 
 export default function StepUpSIPCalculatorPage() {
-
-  const [monthly, setMonthly] = useState();
+  const [monthly, setMonthly] = useState(10000);
   const [years, setYears] = useState(20);
   const [annualReturn, setAnnualReturn] = useState(12);
   const [stepUp, setStepUp] = useState(10);
-
-  const pieRef = useRef(null);
-  const barRef = useRef(null);
   const [showForm, setShowForm] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -54,538 +54,249 @@ export default function StepUpSIPCalculatorPage() {
     calculatorType: "SIP Step up Calculator",
   });
 
+  const pieRef = useRef(null);
+  const barRef = useRef(null);
+
+  useEffect(() => {
+    import("@/lib/pdf-branded").then((m) => m.loadImageAsDataURL("/newlogo.png"));
+  }, []);
 
   const simulation = useMemo(() => {
-    const totalMonths = years * 12;
+    const monthlyAmt = monthly || 0;
     const monthlyRate = annualReturn / 100 / 12;
     let balance = 0;
     let totalInvested = 0;
     const yearly = [];
 
-
     const sipPerYear = [];
     for (let y = 1; y <= years; y++) {
       const factor = Math.pow(1 + stepUp / 100, y - 1);
-      sipPerYear.push(monthly * factor);
+      sipPerYear.push(monthlyAmt * factor);
     }
 
-
-    let monthIndex = 0;
     for (let y = 0; y < years; y++) {
       const sipMonthlyThisYear = sipPerYear[y];
       let investedThisYear = 0;
 
       for (let m = 0; m < 12; m++) {
-
         balance += sipMonthlyThisYear;
         investedThisYear += sipMonthlyThisYear;
         totalInvested += sipMonthlyThisYear;
-
-
         balance *= 1 + monthlyRate;
-        monthIndex++;
       }
+
       yearly.push({
         year: y + 1,
         sipMonthly: sipMonthlyThisYear,
         investedYear: investedThisYear,
         valueAtYearEnd: balance,
+        cumulativeInvested: totalInvested,
       });
     }
 
     const totalValue = balance;
-    const totalGrowth = totalValue - totalInvested;
+    const totalGrowth = Math.max(0, totalValue - totalInvested);
 
-    return {
-      yearly,
-      totalInvested,
-      totalValue,
-      totalGrowth,
-    };
+    return { yearly, totalInvested, totalValue, totalGrowth };
   }, [monthly, years, annualReturn, stepUp]);
 
+  const pieData = useMemo(
+    () => ({
+      labels: ["Total Invested", "Total Growth"],
+      datasets: [
+        {
+          data: [Math.max(simulation.totalInvested, 0), Math.max(simulation.totalGrowth, 0)],
+          backgroundColor: ["#93C5FD", "#2563EB"],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [simulation.totalInvested, simulation.totalGrowth]
+  );
 
-  const pieData = {
-    labels: ["Total Invested", "Total Growth"],
-    datasets: [
-      {
-        data: [simulation.totalInvested, simulation.totalGrowth],
-        backgroundColor: ["#93C5FD", "#3B82F6"],
-      },
-    ],
+  const growthData = useMemo(
+    () => ({
+      labels: simulation.yearly.map((y) => `Y${y.year}`),
+      datasets: [
+        {
+          label: "Invested",
+          data: simulation.yearly.map((y) => Math.round(y.cumulativeInvested)),
+          backgroundColor: "#93C5FD",
+        },
+        {
+          label: "Portfolio value",
+          data: simulation.yearly.map((y) => Math.round(y.valueAtYearEnd)),
+          backgroundColor: "#2563EB",
+        },
+      ],
+    }),
+    [simulation.yearly]
+  );
+
+  const downloadPDF = async () => {
+    const pie = canvasToPdfJpeg(getChartCanvas(pieRef), 420);
+    const bar = canvasToPdfJpeg(getChartCanvas(barRef), 720);
+    if (!pie || !bar) throw new Error("Charts not ready");
+    await createPremiumCalculatorPdf({
+      reportTitle: "SIP Step Up — Advisory Report",
+      formData,
+      summaryCards: [
+        ["Base Monthly SIP", formatPdfMoney(monthly)],
+        ["Duration", `${years} years`],
+        ["Return (p.a.)", `${annualReturn}%`],
+        ["Step-up (yr)", `${stepUp}%`],
+      ],
+      metricRows: [
+        ["Total Invested", formatPdfMoney(simulation.totalInvested)],
+        ["Total Growth", formatPdfMoney(simulation.totalGrowth)],
+        ["Future Value", formatPdfMoney(simulation.totalValue)],
+      ],
+      pieImage: pie,
+      barImage: bar,
+      lineLabels: simulation.yearly.map((row) => `Year ${row.year}`),
+      lineValues: simulation.yearly.map((row) => Math.round(row.valueAtYearEnd)),
+      extraTables: [
+        {
+          title: "Year-wise Summary",
+          rows: simulation.yearly.map((row) => [
+            `Year ${row.year} (SIP ${formatPdfMoney(Math.round(row.sipMonthly))})`,
+            `Invested ${formatPdfMoney(Math.round(row.investedYear))} / Value ${formatPdfMoney(Math.round(row.valueAtYearEnd))}`,
+          ]),
+        },
+      ],
+    });
+    return true;
   };
 
-  const growthData = {
-    labels: simulation.yearly.map((y) => `Y${y.year}`),
-    datasets: [
-      {
-        label: "Invested (cumulative)",
-        data: simulation.yearly.map((y) => Number(y.investedYear)),
-        backgroundColor: "#93C5FD",
-      },
-      {
-        label: "Value at Year End",
-        data: simulation.yearly.map((y) => Math.round(y.valueAtYearEnd)),
-        backgroundColor: "#3B82F6",
-      },
-    ],
-  };
   const handleSubmitForm = async () => {
-    const { name, email, mobile, goal, calculatorType } = formData;
-
-
-    if (!name.trim() || !email.trim() || !mobile.trim() || !goal.trim()) {
-      showAppModal("Please fill the form before downloading PDF.");
-      return;
+    setPdfBusy(true);
+    try {
+      await submitCalculatorLeadAndDownloadPdf({
+        formData,
+        downloadPDF,
+        onDone: () => setShowForm(false),
+      });
+    } finally {
+      setPdfBusy(false);
     }
-
-
-    const res = await fetch("/api/sip-form", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        email,
-        mobile,
-        goal,
-        calculatorType,
-      }),
-    });
-
-    if (res.ok) {
-      setShowForm(false);
-      downloadPDF();
-      showAppModal("Your PDF has been successfully downloaded! 🎉");
-    } else {
-      showAppModal("Something went wrong! Please try again.");
-    }
-  };
-
-  const getCanvas = (ref) =>
-    ref.current?.canvas || ref.current?.ctx?.canvas || ref.current?.chart?.canvas || null;
-
-
-  const downloadPDF = () => {
-    const pieCanvas = getCanvas(pieRef);
-    const barCanvas = getCanvas(barRef);
-    if (!pieCanvas || !barCanvas) {
-      showAppModal("Please wait for charts to render.");
-      return;
-    }
-    const pie = pieCanvas.toDataURL("image/png");
-    const bar = barCanvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "pt", "a4");
-    const W = pdf.internal.pageSize.getWidth();
-    let y = 30;
-
-
-    pdf.setFillColor("#3B82F6");
-    pdf.rect(0, 0, W, 50, "F");
-    pdf.setTextColor("#fff").setFontSize(18);
-    pdf.text("Pioneer Wealth - SIP Step Up Report", 30, 35);
-    pdf.setFontSize(9).text(`Generated: ${new Date().toLocaleString()}`, W - 170, 36);
-
-
-    y = 70;
-    const boxes = [
-      ["Base Monthly SIP", formatNum(monthly)],
-      ["Duration", `${years} years`],
-      ["Return (p.a.)", `${annualReturn}%`],
-      ["Step-up (yr)", `${stepUp}%`],
-    ];
-    const boxW = (W - 80) / 4;
-    boxes.forEach((b, i) => {
-      const x = 30 + i * (boxW + 8);
-      pdf.roundedRect(x, y, boxW, 46, 6, 6);
-      pdf.setFontSize(9).setTextColor("#555").text(b[0], x + 8, y + 16);
-      pdf.setFontSize(12).setTextColor("#000").text(b[1], x + 8, y + 34);
-    });
-
-
-    y += 70;
-    pdf.setFontSize(14).setTextColor("#000").text("Investment Breakdown", 30, y);
-    y += 12;
-    pdf.addImage(pie, "PNG", 30, y, 180, 160);
-
-
-    const summaryX = 240;
-    pdf.setFontSize(12).text("Totals", summaryX, y);
-    pdf.setFontSize(10).text("Total Invested:", summaryX, y + 20);
-    pdf.setFontSize(11).text(formatNum(simulation.totalInvested), summaryX + 180, y + 20, { align: "right" });
-    pdf.setFontSize(10).text("Total Growth:", summaryX, y + 40);
-    pdf.setFontSize(11).text(formatNum(simulation.totalGrowth), summaryX + 180, y + 40, { align: "right" });
-    pdf.setFontSize(10).text("Future Value:", summaryX, y + 60);
-    pdf.setFontSize(11).text(formatNum(simulation.totalValue), summaryX + 180, y + 60, { align: "right" });
-
-
-    y += 180;
-    pdf.setFontSize(14).text("Year-wise Summary", 30, y);
-    y += 12;
-
-
-    const tableX = 30;
-    const tableW = W - 60;
-    const col1 = tableX + 10;
-    const col2 = tableX + tableW * 0.33;
-    const col3 = tableX + tableW * 0.60;
-    pdf.setFillColor("#3B82F6");
-    pdf.rect(tableX, y, tableW, 24, "F");
-    pdf.setFontSize(11).setTextColor("#fff");
-    pdf.text("Year", col1, y + 16);
-    pdf.text("SIP / month", col2, y + 16);
-    pdf.text("Invested (year)", col3, y + 16);
-    pdf.text("Value End", tableX + tableW - 10, y + 16, { align: "right" });
-
-    y += 28;
-    pdf.setFontSize(10).setTextColor("#000");
-
-
-    const rowH = 20;
-    for (let i = 0; i < simulation.yearly.length; i++) {
-      if (y + rowH > pdf.internal.pageSize.getHeight() - 120) {
-
-        pdf.addPage();
-        y = 40;
-        break;
-      }
-      const row = simulation.yearly[i];
-
-      if (i % 2 === 0) {
-        pdf.setFillColor("#f6f6f6");
-        pdf.rect(tableX, y, tableW, rowH, "F");
-      }
-      pdf.setTextColor("#333");
-      pdf.text(String(row.year), col1, y + 14);
-      pdf.text(formatNum(Math.round(row.sipMonthly)), col2, y + 14);
-      pdf.text(formatNum(Math.round(row.investedYear)), col3, y + 14);
-      pdf.text(formatNum(Math.round(row.valueAtYearEnd)), tableX + tableW - 10, y + 14, { align: "right" });
-      y += rowH;
-    }
-
-
-    if (y + 220 > pdf.internal.pageSize.getHeight()) {
-      pdf.addPage();
-      y = 40;
-    } else {
-      y += 20;
-    }
-
-    pdf.setFontSize(14).text("Projected SIP Growth (Yearly)", 30, y);
-    y += 12;
-    pdf.addImage(bar, "PNG", 30, y, W - 60, 220);
-
-    const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
-pdf.save(fileName);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
-        
-      </section>
-      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
-        <div className="max-w-6xl mx-auto text-center px-4">
-          <h1 className="text-4xl font-semibold text-white-900 mb-2">
-            Mutual Fund SIP <span className="text-yellow-300">Calculator </span> Step Up
-          </h1>
-          <div className="flex justify-center gap-2 text-sm text-white-600">
-            <Link href="/">Home</Link>
-
-            <span className="text-white-400">/</span>
-            <span>Tools & Calculators</span>
-            <span className="text-gray-400">/</span>
-            <span className="text-[white] font-medium">Step Up Calculator</span>
-          </div>
+    <CalculatorShell
+      title="SIP Step-Up"
+      highlight="Calculator"
+      breadcrumb="SIP Step-Up"
+      description="See how raising your SIP every year can grow your corpus faster. Set a base SIP, step-up rate, tenure, and expected return."
+      about={
+        <div className="space-y-4 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+          <h2 className="text-xl font-bold text-slate-900">What is a step-up SIP?</h2>
+          <p>
+            A step-up SIP increases your monthly investment by a fixed percentage each year. As income grows, so
+            does your contribution — helping you build a larger corpus without starting at a high amount.
+          </p>
+          <h3 className="text-lg font-semibold text-slate-900">Why use this calculator?</h3>
+          <p>
+            Compare a flat SIP with annual increases, project future value, and download a branded advisory PDF for
+            planning discussions.
+          </p>
         </div>
-      </section>
-
-      <main className="max-w-7xl mx-auto px-6 pt-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-
-              <label className="block text-[15px] text-gray-800 mb-3 font-semibold">
-                How much you can invest through monthly SIP? (Rs)
-              </label>
-
-
-              <input
-                type="text"
-                className="
-        w-full border rounded-xl p-3 mb-2 pr-12
-        text-gray-800 text-lg font-semibold
-        shadow-sm outline-none transition-all duration-300
-        group-hover:shadow-lg
-      "
-                value={
-                  monthly
-                    ? Number(monthly).toLocaleString("en-IN")
-                    : ""
-                }
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/,/g, "").replace(/\D/g, "");
-                  setMonthly(Number(raw || 0));
-                }}
-                placeholder="Enter Monthly SIP Amount"
-              />
-<span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 font-bold text-xl opacity-0 group-hover:opacity-100 transition-all duration-300">
-                ₹
-              </span>
-
-
-
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <label className="block text-[15px] text-gray-800 mb-3 font-semibold">How many years will you continue the SIP?</label>
-              <input type="number" className="w-full border rounded-xl p-3 mb-3 pr-12
-        text-gray-800 text-lg font-semibold
-        shadow-sm outline-none transition-all duration-300
-        group-hover:shadow-lg" value={years} onChange={(e) => setYears(Number(e.target.value || 0))} />
-              <input type="range" min={1} max={40} step={1} value={years} onChange={(e) => setYears(Number(e.target.value))} className="w-full" />
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <label className="block text-[15px] text-gray-800 mb-3 font-semibold">What rate of return do you expect? (% p.a.)</label>
-              <input type="number" className="w-full border rounded-xl p-3 pr-12
-        text-gray-800 text-lg font-semibold mb-3
-        shadow-sm outline-none transition-all duration-300
-        group-hover:shadow-lg" value={annualReturn} onChange={(e) => setAnnualReturn(Number(e.target.value || 0))} />
-              <input type="range" min={0} max={30} step={0.1} value={annualReturn} onChange={(e) => setAnnualReturn(Number(e.target.value))} className="w-full" />
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <label className="block text-[15px] text-gray-800 mb-3 font-semibold">What percentage step up monthly SIP? (% per year)</label>
-              <input type="number" className="w-full border rounded-xl p-3 pr-12
-        text-gray-800 text-lg font-semibold
-        shadow-sm outline-none transition-all duration-300 mb-3
-        group-hover:shadow-lg" value={stepUp} onChange={(e) => setStepUp(Number(e.target.value || 0))} />
-              <input type="range" min={0} max={60} step={0.1} value={stepUp} onChange={(e) => setStepUp(Number(e.target.value))} className="w-full" />
-            </div>
-          </div>
-
-
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex justify-between items-center mb-2">
-                <h4 className="block text-[15px] text-gray-800 mb-3 font-semibold">Break-up of Total Payment</h4>
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium shadow-md hover:bg-blue-700"
-                >
-                  Download
-                </button>
+      }
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <CalcCard title="Investment inputs">
+            <div className="space-y-5">
+              <div>
+                <FieldLabel>Monthly SIP amount (base)</FieldLabel>
+                <MoneyInput
+                  value={monthly}
+                  onChange={(v) => setMonthly(clamp(v, 0, 1e9))}
+                  placeholder="Monthly SIP"
+                />
               </div>
-              <div className="mt-4">
-                <Pie ref={pieRef} data={pieData} />
+              <div>
+                <FieldLabel>Investment tenure (years)</FieldLabel>
+                <NumberField
+                  value={years}
+                  min={1}
+                  max={40}
+                  onChange={(v) => setYears(clamp(v, 1, 40))}
+                />
+                <RangeField value={years} min={1} max={40} onChange={(v) => setYears(clamp(v, 1, 40))} />
+                <SliderMarks marks={["1y", "10y", "20y", "30y", "40y"]} />
+              </div>
+              <div>
+                <FieldLabel>Expected return (% p.a.)</FieldLabel>
+                <NumberField
+                  value={annualReturn}
+                  min={0}
+                  max={30}
+                  step={0.1}
+                  onChange={(v) => setAnnualReturn(clamp(v, 0, 30))}
+                />
+                <RangeField
+                  value={annualReturn}
+                  min={0}
+                  max={30}
+                  step={0.1}
+                  onChange={(v) => setAnnualReturn(clamp(v, 0, 30))}
+                />
+                <SliderMarks marks={["0%", "7%", "15%", "22%", "30%"]} />
+              </div>
+              <div>
+                <FieldLabel>Annual step-up (%)</FieldLabel>
+                <NumberField
+                  value={stepUp}
+                  min={0}
+                  max={60}
+                  step={0.1}
+                  onChange={(v) => setStepUp(clamp(v, 0, 60))}
+                />
+                <RangeField
+                  value={stepUp}
+                  min={0}
+                  max={60}
+                  step={0.1}
+                  onChange={(v) => setStepUp(clamp(v, 0, 60))}
+                />
+                <SliderMarks marks={["0%", "15%", "30%", "45%", "60%"]} />
               </div>
             </div>
+          </CalcCard>
 
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-xl shadow-md border border-blue-400">
-              <h4 className="font-semibold text-blue-100 mb-3 text-center">Monthly SIP Summary</h4>
-              <div className="text-center text-xl font-semibold mb-2">{formatNum(Math.round(monthly))}</div>
-              <div className="space-y-3">
-                <div className="flex justify-between  border-t pt-3">
-                  <span className="text-blue-100">Total Invested</span>
-                  <b>{formatNum(Math.round(simulation.totalInvested))}</b>
-                </div>
-                <div className="flex justify-between border-t pt-3">
-                  <span className="text-blue-100">Total Growth</span>
-                  <b>{formatNum(Math.round(simulation.totalGrowth))}</b>
-                </div>
-                <div className="flex justify-between border-t pt-3">
-                  <span className="text-blue-100">Future Value</span>
-                  <b>{formatNum(Math.round(simulation.totalValue))}</b>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ChartPanel title="Projected SIP growth">
+            <Bar ref={barRef} data={growthData} options={DISPLAY_CHART_OPTIONS} />
+          </ChartPanel>
         </div>
 
-
-        <section className="mt-8 bg-white p-6 rounded-xl shadow-sm text-gray-800 ">
-          <h3 className="font-semibold mb-3 text-center">Projected SIP Growth</h3>
-          <div className="max-w-4xl mx-auto">
-            <Bar ref={barRef} data={growthData} />
-          </div>
-        </section>
-
-
-
-        <section className="mt-8 bg-white p-6 rounded-xl shadow-sm">
-          <h3 className="font-semibold text-gray-800 mb-4 text-xl">
-            SIP Calculator Step Up Amount Invested Summary
-          </h3>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-300 text-sm">
-
-
-              <thead>
-                <tr className="bg-[#3B82F6] text-white border border-gray-600">
-                  <th className="px-4 py-3 border border-gray-300">Year</th>
-                  <th className="px-4 py-3 border border-gray-300">SIP Amount / Month</th>
-                  <th className="px-4 py-3 border border-gray-300">Invested Amount / Year</th>
-                  <th className="px-4 py-3 border border-gray-300">Total Invested Amount</th>
-                  <th className="px-4 py-3 border border-gray-300">Value at Year End</th>
-                </tr>
-              </thead>
-
-
-              <tbody>
-                {simulation.yearly.map((row, index) => {
-                  const cumulative = simulation.yearly
-                    .slice(0, index + 1)
-                    .reduce((s, x) => s + x.investedYear, 0);
-
-                  return (
-                    <tr
-                      key={index}
-                      className="border border-gray-300"
-                    >
-                      <td className="px-4 py-3 border  text-gray-800 border-gray-300">
-                        {`Year${row.year}`}
-                      </td>
-
-                      <td className="px-4 py-3 border  text-gray-800 border-gray-300">
-                        {formatNum(Math.round(row.sipMonthly))}
-                      </td>
-
-                      <td className="px-4 py-3  text-gray-800 border border-gray-300">
-                        {formatNum(Math.round(row.investedYear))}
-                      </td>
-
-                      <td className="px-4 py-3  text-gray-800 border border-gray-300">
-                        {formatNum(Math.round(cumulative))}
-                      </td>
-
-                      <td className="px-4 py-3  text-gray-800 border border-gray-300">
-                        {formatNum(Math.round(row.valueAtYearEnd))}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-
-            </table>
-
-            <section className="max-w-6xl mx-auto px-4 py-10 text-gray-700 leading-relaxed text-[13px]">
-
-              <h3 className="text-[14px] font-semibold text-gray-900 mb-2">
-                Disclaimer:
-              </h3>
-
-              <p className="mb-3">
-                We have gathered all the data, information, statistics from the sources believed
-                to be highly reliable and true. All necessary precautions have been taken to avoid
-                any error, lapse or insufficiency; however, no representations or warranties are made
-                (express or implied) as to the reliability, accuracy or completeness of such information.
-                We cannot be held liable for any loss arising directly or indirectly from the use of, or
-                any action taken in on, any information appearing herein. The user is advised to verify
-                the contents of the report independently.
-              </p>
-
-              <p className="mb-3">
-                Returns less than 1 year are in absolute (%) and greater than 1 year are compounded
-                annualised (CAGR %). SIP returns are shown in XIRR (%).
-              </p>
-
-              <p className="mb-3">
-                The Risk Level of any of the schemes must always be commensurate with the risk profile,
-                investment objective or financial goals of the investor concerned. Mutual Fund Distributors
-                (MFDs) or Registered Investment Advisors (RIAs) should assess the risk profile and investment
-                needs of individual investors into consideration and make scheme(s) or asset allocation
-                recommendations accordingly.
-              </p>
-
-              <p className="font-semibold text-gray-900">
-                Mutual Fund investments are subject to market risks, read all scheme related documents carefully.
-                Past performance may or may not be sustained in the future. Investors should always invest
-                according to their risk profile and consult with their mutual fund distributors or financial
-                advisor before investing.
-              </p>
-
-            </section>
-
-          </div>
-        </section>
-        {showForm && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/40 bg-opacity-50 z-50 "
-            onClick={() => setShowForm(false)}>
-            <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md  text-gray-800"
-              onClick={(e) => e.stopPropagation()} >
-
-              <h2 className="text-lg font-bold mb-4 text-center">Fill Your Details</h2>
-
-              <label className="mb-1 block text-sm font-semibold text-gray-700" htmlFor="sip-step-up-name">
-                Your Name
-              </label>
-              <input
-                id="sip-step-up-name"
-                type="text"
-                title="Your Name"
-                placeholder="Enter your full name"
-                className="border p-2 rounded w-full mb-3 text-gray-800"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-
-              <label className="mb-1 block text-sm font-semibold text-gray-700" htmlFor="sip-step-up-email">
-                Email Address
-              </label>
-              <input
-                id="sip-step-up-email"
-                type="email"
-                title="Email Address"
-                placeholder="Enter your email address"
-                className="border p-2 rounded w-full mb-3 text-gray-800"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-
-              <label className="mb-1 block text-sm font-semibold text-gray-700" htmlFor="sip-step-up-mobile">
-                Mobile Number
-              </label>
-              <input
-                id="sip-step-up-mobile"
-                type="number"
-                title="Mobile Number"
-                placeholder="Enter your mobile number"
-                className="border p-2 rounded w-full mb-3 text-gray-800"
-                value={formData.mobile}
-                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-              />
-
-              <label className="mb-1 block text-sm font-semibold text-gray-700" htmlFor="sip-step-up-goal">
-                Your Goal
-              </label>
-              <input
-                id="sip-step-up-goal"
-                type="text"
-                title="Your Goal"
-                placeholder="Ex: Retirement, Child Education"
-                className="border p-2 rounded w-full mb-3 text-gray-800"
-                value={formData.goal}
-                onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
-              />
-
-              <button
-                onClick={handleSubmitForm}
-                className="bg-blue-600 text-white w-full p-2 rounded-md  text-gray-800"
-              >
-                Submit & Download PDF
-              </button>
-
+        <div className="space-y-5">
+          <CalcCard
+            title="Breakdown"
+            action={<DownloadButton busy={pdfBusy} onClick={() => setShowForm(true)} />}
+          >
+            <div className="mx-auto w-full max-w-[240px]">
+              <Pie ref={pieRef} data={pieData} options={DISPLAY_PIE_OPTIONS} />
             </div>
-          </div>
-        )}
+          </CalcCard>
 
+          <ResultPanel
+            rows={[
+              ["Total invested", formatINR(simulation.totalInvested)],
+              ["Estimated growth", formatINR(simulation.totalGrowth)],
+              ["Future value", formatINR(simulation.totalValue)],
+            ]}
+          />
+        </div>
+      </div>
 
-
-
-      </main>
-    </div>
+      <CalculatorDownloadForm
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleSubmitForm}
+        busy={pdfBusy}
+      />
+    </CalculatorShell>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
-import jsPDF from "jspdf";
+import "@/lib/chartjs-fix";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -10,33 +10,42 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  BarController,
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
-import { showAppModal } from "@/lib/pioneer-modal-bus";
+import { DISPLAY_CHART_OPTIONS, DISPLAY_PIE_OPTIONS } from "@/lib/chart-pdf-options";
+import { submitCalculatorLeadAndDownloadPdf } from "@/lib/calculator-pdf-submit";
+import CalculatorDownloadForm from "@/components/calculators/CalculatorDownloadForm";
+import {
+  CalculatorShell,
+  CalcCard,
+  FieldLabel,
+  MoneyInput,
+  NumberField,
+  RangeField,
+  SliderMarks,
+  ResultPanel,
+  DownloadButton,
+  ChartPanel,
+  formatINR,
+  clamp,
+} from "@/components/calculators/CalculatorShell";
+import {
+  createPremiumCalculatorPdf,
+  formatPdfMoney,
+  getChartCanvas,
+  canvasToPdfJpeg,
+} from "@/lib/pdf-branded";
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement
-);
-
-const formatNum = (num) => {
-  if (!num || isNaN(num)) return "₹ 0";
-  return "₹ " + Math.round(num).toLocaleString("en-IN");
-};
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, BarController);
 
 export default function RetirementPlanningCalculator() {
-
   const [currentAge, setCurrentAge] = useState(30);
   const [retirementAge, setRetirementAge] = useState(60);
   const [monthlyExpense, setMonthlyExpense] = useState(40000);
   const [inflation, setInflation] = useState(6);
-  const [returnRate, setReturnRate] = useState(10);
-
   const [showForm, setShowForm] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -48,21 +57,24 @@ export default function RetirementPlanningCalculator() {
   const pieRef = useRef(null);
   const barRef = useRef(null);
 
-  const simulation = useMemo(() => {
+  useEffect(() => {
+    import("@/lib/pdf-branded").then((m) => m.loadImageAsDataURL("/newlogo.png"));
+  }, []);
 
+  const simulation = useMemo(() => {
     const yearsToRetirement = retirementAge - currentAge;
 
     if (yearsToRetirement <= 0) {
       return {
         corpus: 0,
         futureMonthlyExpense: 0,
+        annualExpense: 0,
         yearly: [],
       };
     }
 
     const futureMonthlyExpense =
-      monthlyExpense *
-      Math.pow(1 + inflation / 100, yearsToRetirement);
+      monthlyExpense * Math.pow(1 + inflation / 100, yearsToRetirement);
 
     const annualExpense = futureMonthlyExpense * 12;
 
@@ -70,13 +82,10 @@ export default function RetirementPlanningCalculator() {
     const corpus = annualExpense / 0.04;
 
     const yearly = [];
-
     for (let y = 1; y <= yearsToRetirement; y++) {
       yearly.push({
         year: y,
-        expense:
-          monthlyExpense *
-          Math.pow(1 + inflation / 100, y),
+        expense: monthlyExpense * Math.pow(1 + inflation / 100, y),
       });
     }
 
@@ -86,247 +95,200 @@ export default function RetirementPlanningCalculator() {
       annualExpense,
       yearly,
     };
-
   }, [currentAge, retirementAge, monthlyExpense, inflation]);
 
-  const pieData = {
-    labels: ["Annual Expense at Retirement", "Required Corpus"],
-    datasets: [
-      {
-        data: [simulation.annualExpense, simulation.corpus],
-        backgroundColor: ["#93C5FD", "#2563EB"],
-      },
-    ],
-  };
+  const pieData = useMemo(
+    () => ({
+      labels: ["Annual expense at retirement", "Required corpus"],
+      datasets: [
+        {
+          data: [Math.max(simulation.annualExpense || 0, 0), Math.max(simulation.corpus || 0, 0)],
+          backgroundColor: ["#93C5FD", "#2563EB"],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [simulation.annualExpense, simulation.corpus]
+  );
 
-  const growthData = {
-    labels: simulation.yearly.map((y) => `Year ${y.year}`),
-    datasets: [
-      {
-        label: "Inflated Monthly Expense",
-        data: simulation.yearly.map((y) =>
-          Math.round(y.expense)
-        ),
-        backgroundColor: "#2563EB",
-      },
-    ],
-  };
+  const growthData = useMemo(
+    () => ({
+      labels: simulation.yearly.map((y) => `Y${y.year}`),
+      datasets: [
+        {
+          label: "Inflated monthly expense",
+          data: simulation.yearly.map((y) => Math.round(y.expense)),
+          backgroundColor: "#2563EB",
+        },
+      ],
+    }),
+    [simulation.yearly]
+  );
 
-  const getCanvas = (ref) =>
-    ref.current?.canvas ||
-    ref.current?.ctx?.canvas ||
-    ref.current?.chart?.canvas ||
-    null;
-
-  const downloadPDF = () => {
-
-    const pieCanvas = getCanvas(pieRef);
-    const barCanvas = getCanvas(barRef);
-
-    if (!pieCanvas || !barCanvas) {
-      showAppModal("Please wait... charts not ready.");
-      return;
-    }
-
-    const pie = pieCanvas.toDataURL("image/png");
-    const bar = barCanvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "pt", "a4");
-    const W = pdf.internal.pageSize.getWidth();
-    let y = 35;
-
-    // HEADER
-    pdf.setFillColor("#2563EB");
-    pdf.rect(0, 0, W, 55, "F");
-
-    pdf.setTextColor("#fff");
-    pdf.setFontSize(18);
-    pdf.text("Pioneer Wealth", 30, 35);
-
-    pdf.setFontSize(9);
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, W - 180, 35);
-
-    y = 75;
-
-    const summary = [
-      ["Current Age", currentAge],
-      ["Retirement Age", retirementAge],
-      ["Monthly Expense Today", formatNum(monthlyExpense)],
-      ["Inflation", `${inflation}%`],
-    ];
-
-    const boxW = (W - 100) / 4;
-
-    summary.forEach((item, i) => {
-      const x = 30 + i * (boxW + 10);
-      pdf.setDrawColor("#BFDBFE");
-      pdf.roundedRect(x, y, boxW, 50, 6, 6);
-
-      pdf.setTextColor("#555");
-      pdf.setFontSize(10);
-      pdf.text(item[0], x + 8, y + 18);
-
-      pdf.setTextColor("#000");
-      pdf.setFontSize(12);
-      pdf.text(String(item[1]), x + 8, y + 38);
+  const downloadPDF = async () => {
+    const pie = canvasToPdfJpeg(getChartCanvas(pieRef), 420);
+    const bar = canvasToPdfJpeg(getChartCanvas(barRef), 720);
+    if (!pie || !bar) throw new Error("Charts not ready");
+    await createPremiumCalculatorPdf({
+      reportTitle: "Retirement — Advisory Report",
+      formData,
+      summaryCards: [
+        ["Current age", `${currentAge}`],
+        ["Retirement age", `${retirementAge}`],
+        ["Monthly expense today", formatPdfMoney(monthlyExpense)],
+        ["Inflation", `${inflation}%`],
+      ],
+      metricRows: [
+        ["Future monthly expense", formatPdfMoney(simulation.futureMonthlyExpense)],
+        ["Required retirement corpus", formatPdfMoney(simulation.corpus)],
+      ],
+      pieImage: pie,
+      barImage: bar,
+      lineLabels: simulation.yearly.map((y) => `Year ${y.year}`),
+      lineValues: simulation.yearly.map((y) => Math.round(y.expense)),
     });
-
-    y += 95;
-
-    pdf.setFontSize(14).setTextColor("#000");
-    pdf.text("Retirement Corpus Summary", 30, y);
-
-    y += 20;
-
-    pdf.setFontSize(11);
-    pdf.text(
-      `Future Monthly Expense: ${formatNum(simulation.futureMonthlyExpense)}`,
-      30,
-      y
-    );
-    y += 20;
-    pdf.text(
-      `Required Retirement Corpus: ${formatNum(simulation.corpus)}`,
-      30,
-      y
-    );
-
-    y += 25;
-
-    pdf.addImage(pie, "PNG", 30, y, 180, 160);
-
-    pdf.addPage();
-    y = 40;
-
-    pdf.setFontSize(14).setTextColor("#000");
-    pdf.text("Inflation Growth Until Retirement", 30, y);
-
-    y += 15;
-
-    pdf.addImage(bar, "PNG", 30, y, W - 60, 220);
-
-    const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
-    pdf.save(fileName);
+    return true;
   };
 
   const handleSubmitForm = async () => {
-
-    const { name, email, mobile, goal } = formData;
-
-    if (!name || !email || !mobile || !goal) {
-      showAppModal("Please fill all details");
-      return;
+    setPdfBusy(true);
+    try {
+      await submitCalculatorLeadAndDownloadPdf({
+        formData,
+        downloadPDF,
+        onDone: () => setShowForm(false),
+      });
+    } finally {
+      setPdfBusy(false);
     }
-
-    await fetch("/api/sip-form", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    setShowForm(false);
-    downloadPDF();
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 pb-20 pt-16">
-
-      <section className="py-16 px-6 mx-6 md:mx-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl shadow-lg text-center text-white">
-        <h1 className="text-4xl font-bold">
-          Retirement Planning Calculator
-        </h1>
-      </section>
-
-      <main className="max-w-7xl mx-auto px-6 pt-10">
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-          <div className="lg:col-span-2 space-y-6">
-
-            {[
-              ["Current Age", currentAge, setCurrentAge],
-              ["Retirement Age", retirementAge, setRetirementAge],
-              ["Monthly Expense Today (₹)", monthlyExpense, setMonthlyExpense],
-              ["Expected Inflation (%)", inflation, setInflation],
-            ].map((item, i) => (
-              <div key={i} className="bg-white p-6 rounded-xl shadow border">
-                <label className="block font-semibold text-gray-800 mb-2">
-                  {item[0]}
-                </label>
-                <input
-                  type="number"
-                  value={item[1]}
-                  onChange={(e) => item[2](Number(e.target.value))}
-                  className="w-full border rounded-xl p-3 text-gray-900"
+    <CalculatorShell
+      title="Retirement Planning"
+      highlight="Calculator"
+      breadcrumb="Retirement"
+      description="Estimate the corpus you may need at retirement using today’s expenses, inflation, and a 4% withdrawal guideline."
+      about={
+        <div className="space-y-4 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+          <h2 className="text-xl font-bold text-slate-900">Plan your retirement corpus</h2>
+          <p>
+            This calculator inflates your current monthly spending to retirement age and applies a simple 4%
+            withdrawal rule to estimate the nest egg you may need.
+          </p>
+          <h3 className="text-lg font-semibold text-slate-900">Why use this calculator?</h3>
+          <p>
+            See how inflation changes living costs over time, and download a branded advisory PDF to discuss
+            with your advisor.
+          </p>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <CalcCard title="Retirement inputs">
+            <div className="space-y-5">
+              <div>
+                <FieldLabel>Current age (years)</FieldLabel>
+                <NumberField
+                  value={currentAge}
+                  min={18}
+                  max={80}
+                  onChange={(v) => {
+                    const next = clamp(v, 18, 80);
+                    setCurrentAge(next);
+                    if (retirementAge <= next) setRetirementAge(Math.min(90, next + 1));
+                  }}
+                />
+                <RangeField
+                  value={currentAge}
+                  min={18}
+                  max={80}
+                  onChange={(v) => {
+                    setCurrentAge(v);
+                    if (retirementAge <= v) setRetirementAge(Math.min(90, v + 1));
+                  }}
+                />
+                <SliderMarks marks={["18", "30", "45", "60", "80"]} />
+              </div>
+              <div>
+                <FieldLabel>Retirement age (years)</FieldLabel>
+                <NumberField
+                  value={retirementAge}
+                  min={currentAge + 1}
+                  max={90}
+                  onChange={(v) => setRetirementAge(clamp(v, currentAge + 1, 90))}
+                />
+                <RangeField
+                  value={retirementAge}
+                  min={currentAge + 1}
+                  max={90}
+                  onChange={(v) => setRetirementAge(clamp(v, currentAge + 1, 90))}
+                />
+                <SliderMarks marks={["40", "50", "60", "70", "90"]} />
+              </div>
+              <div>
+                <FieldLabel>Monthly expense today</FieldLabel>
+                <MoneyInput
+                  value={monthlyExpense}
+                  onChange={(v) => setMonthlyExpense(clamp(v, 0, 1e9))}
+                  placeholder="Current monthly spend"
                 />
               </div>
-            ))}
-
-          </div>
-
-          <div className="space-y-6">
-
-            <div className="bg-white p-6 rounded-xl shadow border">
-              <div className="flex justify-between items-center">
-                <h4 className="font-semibold text-gray-800">
-                  Required Corpus
-                </h4>
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg">
-                  Download
-                </button>
-              </div>
-
-              <div className="text-3xl font-bold text-blue-700 text-center mt-6">
-                {formatNum(simulation.corpus)}
+              <div>
+                <FieldLabel>Expected inflation (% p.a.)</FieldLabel>
+                <NumberField
+                  value={inflation}
+                  min={0}
+                  max={15}
+                  step={0.1}
+                  onChange={(v) => setInflation(clamp(v, 0, 15))}
+                />
+                <RangeField
+                  value={inflation}
+                  min={0}
+                  max={15}
+                  step={0.1}
+                  onChange={(v) => setInflation(clamp(v, 0, 15))}
+                />
+                <SliderMarks marks={["0%", "3%", "6%", "9%", "12%", "15%"]} />
               </div>
             </div>
+          </CalcCard>
 
-            <div className="bg-white p-6 rounded-xl shadow border">
-              <Pie ref={pieRef} data={pieData} />
+          <ChartPanel title="Inflated monthly expense over time">
+            <Bar ref={barRef} data={growthData} options={DISPLAY_CHART_OPTIONS} />
+          </ChartPanel>
+        </div>
+
+        <div className="space-y-5">
+          <CalcCard
+            title="Breakdown"
+            action={<DownloadButton busy={pdfBusy} onClick={() => setShowForm(true)} />}
+          >
+            <div className="mx-auto w-full max-w-[240px]">
+              <Pie ref={pieRef} data={pieData} options={DISPLAY_PIE_OPTIONS} />
             </div>
+          </CalcCard>
 
-          </div>
+          <ResultPanel
+            rows={[
+              ["Future monthly expense", formatINR(simulation.futureMonthlyExpense)],
+              ["Annual expense at retirement", formatINR(simulation.annualExpense)],
+              ["Required corpus", formatINR(simulation.corpus)],
+            ]}
+          />
         </div>
+      </div>
 
-        <div className="mt-10 bg-white p-6 rounded-xl shadow border">
-          <Bar ref={barRef} data={growthData} />
-        </div>
-
-      </main>
-
-      {showForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50"
-             onClick={() => setShowForm(false)}>
-          <div className="bg-white p-6 rounded-lg w-full max-w-md"
-               onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4 text-center">
-              Fill Your Details
-            </h2>
-
-            {["name","email","mobile","goal"].map((field)=>(
-              <input
-                key={field}
-                type="text"
-                placeholder={field}
-                className="border p-2 rounded w-full mb-3 text-gray-800"
-                value={formData[field]}
-                onChange={(e)=>
-                  setFormData({...formData,[field]:e.target.value})
-                }
-              />
-            ))}
-
-            <button
-              onClick={handleSubmitForm}
-              className="bg-blue-600 text-white w-full p-2 rounded-md">
-              Submit & Download PDF
-            </button>
-          </div>
-        </div>
-      )}
-
-    </div>
+      <CalculatorDownloadForm
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleSubmitForm}
+        busy={pdfBusy}
+      />
+    </CalculatorShell>
   );
 }

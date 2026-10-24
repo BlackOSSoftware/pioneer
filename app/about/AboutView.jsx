@@ -11,31 +11,31 @@ function IconByName({ name, size = 22 }) {
 export default function AboutView({ about }) {
   return (
     <div className="bg-slate-50">
-      <section className="mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-sky-700 to-blue-900 px-6 py-14 text-white shadow-xl sm:px-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">{about.heroTag}</p>
-          <h1 className="mt-3 text-3xl font-bold sm:text-5xl">{about.heroTitle}</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-sky-100 sm:text-base">{about.heroSubtitle}</p>
+      <section className="mx-auto max-w-7xl px-3 pb-6 pt-6 min-[380px]:px-4 sm:px-6 sm:pb-8 sm:pt-8 lg:px-8">
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-sky-700 to-blue-900 px-4 py-10 text-white shadow-xl min-[380px]:rounded-3xl min-[380px]:px-6 sm:px-10 sm:py-14">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200 sm:text-xs">{about.heroTag}</p>
+          <h1 className="mt-2 text-2xl font-bold leading-snug min-[380px]:mt-3 min-[380px]:text-3xl sm:text-5xl">{about.heroTitle}</h1>
+          <p className="mt-3 max-w-3xl text-xs leading-5 text-sky-100 min-[380px]:text-sm min-[380px]:leading-6 sm:mt-4 sm:text-base sm:leading-7">{about.heroSubtitle}</p>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <section className="mx-auto grid max-w-7xl items-center gap-8 px-3 py-8 min-[380px]:px-4 sm:gap-10 sm:px-6 sm:py-10 lg:grid-cols-2 lg:px-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{about.missionTitle}</h2>
+          <h2 className="text-xl font-bold text-slate-900 min-[380px]:text-2xl sm:text-3xl">{about.missionTitle}</h2>
           {(about.missionParas || []).map((p, i) => (
-            <p key={i} className="mt-4 text-base leading-7 text-slate-600">
+            <p key={i} className="mt-3 text-sm leading-6 text-slate-600 sm:mt-4 sm:text-base sm:leading-7">
               {p}
             </p>
           ))}
         </div>
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-2 shadow-lg">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-lg sm:rounded-3xl sm:p-2">
           <Image
             src={about.missionImage || "/neww.jpg"}
             alt="Pioneer Wealth team collaboration"
             width={1200}
             height={800}
-            className="h-[360px] w-full rounded-2xl object-cover"
+            className="h-[220px] w-full rounded-xl object-cover min-[380px]:h-[280px] sm:h-[360px] sm:rounded-2xl"
           />
         </div>
       </section>

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
-import jsPDF from "jspdf";
+import "@/lib/chartjs-fix";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -10,32 +10,42 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  BarController,
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
-import { showAppModal } from "@/lib/pioneer-modal-bus";
+import { DISPLAY_CHART_OPTIONS, DISPLAY_PIE_OPTIONS } from "@/lib/chart-pdf-options";
+import { submitCalculatorLeadAndDownloadPdf } from "@/lib/calculator-pdf-submit";
+import CalculatorDownloadForm from "@/components/calculators/CalculatorDownloadForm";
+import {
+  CalculatorShell,
+  CalcCard,
+  FieldLabel,
+  MoneyInput,
+  NumberField,
+  RangeField,
+  SliderMarks,
+  ResultPanel,
+  DownloadButton,
+  ChartPanel,
+  formatINR,
+  clamp,
+} from "@/components/calculators/CalculatorShell";
+import {
+  createPremiumCalculatorPdf,
+  formatPdfMoney,
+  getChartCanvas,
+  canvasToPdfJpeg,
+} from "@/lib/pdf-branded";
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement
-);
-
-const formatNum = (num) => {
-  if (!num || isNaN(num)) return "₹ 0";
-  return "₹ " + Math.round(num).toLocaleString("en-IN");
-};
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, BarController);
 
 export default function SIPAnnualIncreaseCalculator() {
-
   const [monthlySIP, setMonthlySIP] = useState(10000);
   const [years, setYears] = useState(20);
   const [annualReturn, setAnnualReturn] = useState(12);
   const [annualIncrease, setAnnualIncrease] = useState(10);
-
   const [showForm, setShowForm] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -47,19 +57,19 @@ export default function SIPAnnualIncreaseCalculator() {
   const pieRef = useRef(null);
   const barRef = useRef(null);
 
-  const simulation = useMemo(() => {
+  useEffect(() => {
+    import("@/lib/pdf-branded").then((m) => m.loadImageAsDataURL("/newlogo.png"));
+  }, []);
 
+  const simulation = useMemo(() => {
+    const baseSIP = monthlySIP || 0;
     const monthlyRate = annualReturn / 100 / 12;
     let balance = 0;
     let totalInvested = 0;
-
     const yearlyData = [];
 
     for (let y = 1; y <= years; y++) {
-
-      const increasedSIP =
-        monthlySIP * Math.pow(1 + annualIncrease / 100, y - 1);
-
+      const increasedSIP = baseSIP * Math.pow(1 + annualIncrease / 100, y - 1);
       let investedThisYear = 0;
 
       for (let m = 0; m < 12; m++) {
@@ -72,6 +82,7 @@ export default function SIPAnnualIncreaseCalculator() {
       yearlyData.push({
         year: y,
         sip: increasedSIP,
+        investedThisYear,
         invested: totalInvested,
         value: balance,
       });
@@ -81,367 +92,207 @@ export default function SIPAnnualIncreaseCalculator() {
       yearlyData,
       totalInvested,
       totalValue: balance,
-      growth: balance - totalInvested,
+      growth: Math.max(0, balance - totalInvested),
     };
-
   }, [monthlySIP, years, annualReturn, annualIncrease]);
 
-  const pieData = {
-    labels: ["Total Invested", "Total Growth"],
-    datasets: [
-      {
-        data: [simulation.totalInvested, simulation.growth],
-        backgroundColor: ["#BFDBFE", "#2563EB"],
-        borderWidth: 0,
-      },
-    ],
-  };
+  const pieData = useMemo(
+    () => ({
+      labels: ["Total Invested", "Total Growth"],
+      datasets: [
+        {
+          data: [Math.max(simulation.totalInvested, 0), Math.max(simulation.growth, 0)],
+          backgroundColor: ["#93C5FD", "#2563EB"],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [simulation.totalInvested, simulation.growth]
+  );
 
-  const growthData = {
-    labels: simulation.yearlyData.map((y) => `Year ${y.year}`),
-    datasets: [
-      {
-        label: "Portfolio Value",
-        data: simulation.yearlyData.map((y) =>
-          Math.round(y.value)
-        ),
-        backgroundColor: "#2563EB",
-        borderRadius: 6,
-      },
-    ],
-  };
+  const growthData = useMemo(
+    () => ({
+      labels: simulation.yearlyData.map((y) => `Y${y.year}`),
+      datasets: [
+        {
+          label: "Invested",
+          data: simulation.yearlyData.map((y) => Math.round(y.invested)),
+          backgroundColor: "#93C5FD",
+        },
+        {
+          label: "Portfolio value",
+          data: simulation.yearlyData.map((y) => Math.round(y.value)),
+          backgroundColor: "#2563EB",
+        },
+      ],
+    }),
+    [simulation.yearlyData]
+  );
 
-  const getCanvas = (ref) =>
-  ref.current?.canvas ||
-  ref.current?.ctx?.canvas ||
-  ref.current?.chart?.canvas ||
-  null;
-
-const downloadPDF = () => {
-
-  const pieCanvas = getCanvas(pieRef);
-  const barCanvas = getCanvas(barRef);
-
-  if (!pieCanvas || !barCanvas) {
-    showAppModal("Please wait... charts not ready.");
-    return;
-  }
-
-  const pie = pieCanvas.toDataURL("image/png");
-  const bar = barCanvas.toDataURL("image/png");
-
-  const pdf = new jsPDF("p", "pt", "a4");
-  const W = pdf.internal.pageSize.getWidth();
-  let y = 35;
-
-  // ===== HEADER =====
-  pdf.setFillColor("#2563EB");
-  pdf.rect(0, 0, W, 55, "F");
-
-  pdf.setTextColor("#ffffff");
-  pdf.setFontSize(18);
-  pdf.text("Pioneer Wealth", 30, 35);
-
-  pdf.setFontSize(9);
-  pdf.text(`Generated: ${new Date().toLocaleString()}`, W - 180, 35);
-
-  y = 75;
-
-  // ===== SUMMARY BOXES =====
-  const summary = [
-    ["Base Monthly SIP", formatNum(monthlySIP)],
-    ["Duration", `${years} Years`],
-    ["Expected Return", `${annualReturn}%`],
-    ["Annual Increase", `${annualIncrease}%`],
-  ];
-
-  const boxW = (W - 100) / 4;
-
-  summary.forEach((item, i) => {
-    const x = 30 + i * (boxW + 10);
-
-    pdf.setDrawColor("#BFDBFE");
-    pdf.roundedRect(x, y, boxW, 50, 6, 6);
-
-    pdf.setTextColor("#555");
-    pdf.setFontSize(10);
-    pdf.text(item[0], x + 8, y + 18);
-
-    pdf.setTextColor("#000");
-    pdf.setFontSize(12);
-    pdf.text(item[1], x + 8, y + 38);
-  });
-
-  y += 95;
-
-  // ===== INVESTMENT BREAKDOWN =====
-  pdf.setFontSize(14).setTextColor("#000");
-  pdf.text("Investment Breakdown", 30, y);
-
-  y += 15;
-
-  pdf.addImage(pie, "PNG", 30, y, 180, 160);
-
-  // ===== PROJECTION TABLE =====
-  const tableX = 240;
-  const tableW = W - tableX - 30;
-
-  const rows = [
-    ["Total Invested", formatNum(simulation.totalInvested)],
-    ["Total Growth", formatNum(simulation.growth)],
-    ["Future Value", formatNum(simulation.totalValue)],
-  ];
-
-  pdf.setFontSize(12).setTextColor("#000");
-  pdf.text("Projection Summary", tableX, y);
-
-  y += 25;
-
-  rows.forEach((row, index) => {
-
-    if (index % 2 === 0) {
-      pdf.setFillColor("#F3F4F6");
-      pdf.rect(tableX, y - 12, tableW, 22, "F");
-    }
-
-    pdf.setTextColor("#333");
-    pdf.setFontSize(10);
-
-    pdf.text(row[0], tableX + 10, y + 3);
-    pdf.text(row[1], tableX + tableW - 10, y + 3, {
-      align: "right",
+  const downloadPDF = async () => {
+    const pie = canvasToPdfJpeg(getChartCanvas(pieRef), 420);
+    const bar = canvasToPdfJpeg(getChartCanvas(barRef), 720);
+    if (!pie || !bar) throw new Error("Charts not ready");
+    await createPremiumCalculatorPdf({
+      reportTitle: "SIP Annual Increase — Advisory Report",
+      formData,
+      summaryCards: [
+        ["Base Monthly SIP", formatPdfMoney(monthlySIP)],
+        ["Duration", `${years} Years`],
+        ["Expected Return", `${annualReturn}%`],
+        ["Annual Increase", `${annualIncrease}%`],
+      ],
+      metricRows: [
+        ["Total Invested", formatPdfMoney(simulation.totalInvested)],
+        ["Total Growth", formatPdfMoney(simulation.growth)],
+        ["Future Value", formatPdfMoney(simulation.totalValue)],
+      ],
+      pieImage: pie,
+      barImage: bar,
+      lineLabels: simulation.yearlyData.map((row) => `Year ${row.year}`),
+      lineValues: simulation.yearlyData.map((row) => Math.round(row.value)),
+      extraTables: [
+        {
+          title: "Year-wise SIP Growth Summary",
+          rows: simulation.yearlyData.map((row) => [
+            `Year ${row.year} (SIP ${formatPdfMoney(row.sip)})`,
+            `Invested ${formatPdfMoney(row.invested)} / Value ${formatPdfMoney(row.value)}`,
+          ]),
+        },
+      ],
     });
-
-    y += 22;
-  });
-
-  // ===== YEARLY TABLE (NEW PAGE IF NEEDED) =====
-  pdf.addPage();
-  y = 40;
-
-  pdf.setFontSize(14).setTextColor("#000");
-  pdf.text("Year-wise SIP Growth Summary", 30, y);
-
-  y += 20;
-
-  const col1 = 40;
-  const col2 = 150;
-  const col3 = 260;
-  const col4 = W - 40;
-
-  pdf.setFillColor("#2563EB");
-  pdf.rect(30, y - 12, W - 60, 22, "F");
-
-  pdf.setTextColor("#fff");
-  pdf.setFontSize(10);
-  pdf.text("Year", col1, y + 3);
-  pdf.text("SIP / Month", col2, y + 3);
-  pdf.text("Total Invested", col3, y + 3);
-  pdf.text("Portfolio Value", col4, y + 3, { align: "right" });
-
-  y += 25;
-
-  simulation.yearlyData.forEach((row, index) => {
-
-    if (y > 760) {
-      pdf.addPage();
-      y = 40;
-    }
-
-    if (index % 2 === 0) {
-      pdf.setFillColor("#F9FAFB");
-      pdf.rect(30, y - 12, W - 60, 22, "F");
-    }
-
-    pdf.setTextColor("#000");
-    pdf.setFontSize(9);
-
-    pdf.text(String(row.year), col1, y + 3);
-    pdf.text(formatNum(row.sip), col2, y + 3);
-    pdf.text(formatNum(row.invested), col3, y + 3);
-    pdf.text(formatNum(row.value), col4, y + 3, {
-      align: "right",
-    });
-
-    y += 20;
-  });
-
-  // ===== BAR CHART =====
-  pdf.addPage();
-  y = 40;
-
-  pdf.setFontSize(14).setTextColor("#000");
-  pdf.text("Projected Portfolio Growth", 30, y);
-
-  y += 15;
-
-  pdf.addImage(bar, "PNG", 30, y, W - 60, 220);
-
-  const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
-  pdf.save(fileName);
-};
-
+    return true;
+  };
 
   const handleSubmitForm = async () => {
-
-    const { name, email, mobile, goal } = formData;
-
-    if (!name || !email || !mobile || !goal) {
-      showAppModal("Please fill all details");
-      return;
+    setPdfBusy(true);
+    try {
+      await submitCalculatorLeadAndDownloadPdf({
+        formData,
+        downloadPDF,
+        onDone: () => setShowForm(false),
+      });
+    } finally {
+      setPdfBusy(false);
     }
-
-    await fetch("/api/sip-form", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    setShowForm(false);
-    downloadPDF();
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 pb-20 pt-16">
-
-      {/* Hero */}
-      <section className="py-16 px-6 mx-6 md:mx-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl shadow-lg text-center text-white">
-        <h1 className="text-4xl font-bold">
-          SIP With Annual Increase Calculator
-        </h1>
-        <p className="mt-2 text-blue-100">
-          Grow your SIP every year and maximize returns
-        </p>
-      </section>
-
-      <main className="max-w-7xl mx-auto px-6 pt-10">
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-          <div className="lg:col-span-2 space-y-6">
-
-            {[
-              {
-                label: "Monthly SIP (₹)",
-                value: monthlySIP,
-                setter: setMonthlySIP,
-              },
-              {
-                label: "Duration (Years)",
-                value: years,
-                setter: setYears,
-              },
-              {
-                label: "Expected Return (% p.a.)",
-                value: annualReturn,
-                setter: setAnnualReturn,
-              },
-              {
-                label: "Annual Increase (%)",
-                value: annualIncrease,
-                setter: setAnnualIncrease,
-              },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="bg-white p-6 rounded-2xl shadow border border-gray-200"
-              >
-                <label className="block text-gray-700 font-semibold mb-2">
-                  {item.label}
-                </label>
-                <input
-                  type="number"
-                  value={item.value}
-                  onChange={(e) =>
-                    item.setter(Number(e.target.value))
-                  }
-                  className="w-full border border-gray-300 rounded-xl p-3
-                             bg-white text-gray-900
-                             focus:outline-none focus:ring-2 focus:ring-blue-500"
+    <CalculatorShell
+      title="SIP Annual Increase"
+      highlight="Calculator"
+      breadcrumb="SIP Annual Increase"
+      description="Model a SIP that rises every year. Adjust base amount, annual increase, tenure, and expected return to project your corpus."
+      about={
+        <div className="space-y-4 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+          <h2 className="text-xl font-bold text-slate-900">What is an annual increase SIP?</h2>
+          <p>
+            An annual increase SIP raises your monthly contribution by a set percentage each year. It mirrors salary
+            growth and can compound wealth more effectively than a fixed SIP.
+          </p>
+          <h3 className="text-lg font-semibold text-slate-900">Why use this calculator?</h3>
+          <p>
+            Estimate how yearly top-ups change invested amount and future value, then download a branded PDF for
+            advisory or personal planning.
+          </p>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <CalcCard title="Investment inputs">
+            <div className="space-y-5">
+              <div>
+                <FieldLabel>Monthly SIP amount (base)</FieldLabel>
+                <MoneyInput
+                  value={monthlySIP}
+                  onChange={(v) => setMonthlySIP(clamp(v, 0, 1e9))}
+                  placeholder="Monthly SIP"
                 />
               </div>
-            ))}
-
-          </div>
-
-          {/* Result */}
-          <div className="space-y-6">
-
-            <div className="bg-white p-6 rounded-2xl shadow border border-gray-200">
-              <div className="flex justify-between items-center">
-                <h4 className="font-semibold text-gray-800">
-                  Future Value
-                </h4>
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                >
-                  Download
-                </button>
+              <div>
+                <FieldLabel>Investment tenure (years)</FieldLabel>
+                <NumberField
+                  value={years}
+                  min={1}
+                  max={50}
+                  onChange={(v) => setYears(clamp(v, 1, 50))}
+                />
+                <RangeField value={years} min={1} max={50} onChange={(v) => setYears(clamp(v, 1, 50))} />
+                <SliderMarks marks={["1y", "10y", "20y", "30y", "40y", "50y"]} />
               </div>
-
-              <div className="text-3xl font-bold text-center text-blue-700 mt-6">
-                {formatNum(simulation.totalValue)}
+              <div>
+                <FieldLabel>Expected return (% p.a.)</FieldLabel>
+                <NumberField
+                  value={annualReturn}
+                  min={0}
+                  max={30}
+                  step={0.1}
+                  onChange={(v) => setAnnualReturn(clamp(v, 0, 30))}
+                />
+                <RangeField
+                  value={annualReturn}
+                  min={0}
+                  max={30}
+                  step={0.1}
+                  onChange={(v) => setAnnualReturn(clamp(v, 0, 30))}
+                />
+                <SliderMarks marks={["0%", "7%", "15%", "22%", "30%"]} />
               </div>
-
-              <div className="mt-4 text-sm text-gray-600 text-center">
-                Invested: {formatNum(simulation.totalInvested)}
+              <div>
+                <FieldLabel>Annual increase (%)</FieldLabel>
+                <NumberField
+                  value={annualIncrease}
+                  min={0}
+                  max={60}
+                  step={0.1}
+                  onChange={(v) => setAnnualIncrease(clamp(v, 0, 60))}
+                />
+                <RangeField
+                  value={annualIncrease}
+                  min={0}
+                  max={60}
+                  step={0.1}
+                  onChange={(v) => setAnnualIncrease(clamp(v, 0, 60))}
+                />
+                <SliderMarks marks={["0%", "15%", "30%", "45%", "60%"]} />
               </div>
             </div>
+          </CalcCard>
 
-            <div className="bg-white p-6 rounded-2xl shadow border border-gray-200">
-              <Pie ref={pieRef} data={pieData} />
-            </div>
-
-          </div>
+          <ChartPanel title="Projected SIP growth">
+            <Bar ref={barRef} data={growthData} options={DISPLAY_CHART_OPTIONS} />
+          </ChartPanel>
         </div>
 
-        <section className="mt-10 bg-white p-6 rounded-2xl shadow border border-gray-200">
-          <Bar ref={barRef} data={growthData} />
-        </section>
-
-      </main>
-
-      {/* Modal */}
-      {showForm && (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-black/40 z-50"
-          onClick={() => setShowForm(false)}
-        >
-          <div
-            className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
+        <div className="space-y-5">
+          <CalcCard
+            title="Breakdown"
+            action={<DownloadButton busy={pdfBusy} onClick={() => setShowForm(true)} />}
           >
-            <h2 className="text-lg font-bold mb-4 text-center text-gray-800">
-              Fill Your Details
-            </h2>
+            <div className="mx-auto w-full max-w-[240px]">
+              <Pie ref={pieRef} data={pieData} options={DISPLAY_PIE_OPTIONS} />
+            </div>
+          </CalcCard>
 
-            {["name", "email", "mobile", "goal"].map((field) => (
-              <input
-                key={field}
-                type="text"
-                placeholder={field}
-                className="border border-gray-300 p-2 rounded w-full mb-3 bg-white text-gray-900"
-                value={formData[field]}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    [field]: e.target.value,
-                  })
-                }
-              />
-            ))}
-
-            <button
-              onClick={handleSubmitForm}
-              className="bg-blue-600 text-white w-full p-2 rounded-md hover:bg-blue-700"
-            >
-              Submit & Download PDF
-            </button>
-          </div>
+          <ResultPanel
+            rows={[
+              ["Total invested", formatINR(simulation.totalInvested)],
+              ["Estimated growth", formatINR(simulation.growth)],
+              ["Future value", formatINR(simulation.totalValue)],
+            ]}
+          />
         </div>
-      )}
+      </div>
 
-    </div>
+      <CalculatorDownloadForm
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleSubmitForm}
+        busy={pdfBusy}
+      />
+    </CalculatorShell>
   );
 }

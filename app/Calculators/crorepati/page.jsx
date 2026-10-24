@@ -1,613 +1,317 @@
 "use client";
 
-
-import React, { useMemo, useRef, useState } from "react";
+import "@/lib/chartjs-fix";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    Chart as ChartJS,
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    PointElement,
-    LineElement,
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  BarController,
 } from "chart.js";
-import { Pie, Bar, } from "react-chartjs-2";
-import Link from "next/link";
-import jsPDF from "jspdf";
-import { showAppModal } from "@/lib/pioneer-modal-bus";
+import { Pie, Bar } from "react-chartjs-2";
+import { DISPLAY_CHART_OPTIONS, DISPLAY_PIE_OPTIONS } from "@/lib/chart-pdf-options";
+import { submitCalculatorLeadAndDownloadPdf } from "@/lib/calculator-pdf-submit";
+import CalculatorDownloadForm from "@/components/calculators/CalculatorDownloadForm";
+import {
+  CalculatorShell,
+  CalcCard,
+  FieldLabel,
+  MoneyInput,
+  NumberField,
+  RangeField,
+  SliderMarks,
+  ResultPanel,
+  DownloadButton,
+  ChartPanel,
+  formatINR,
+  clamp,
+} from "@/components/calculators/CalculatorShell";
+import {
+  createPremiumCalculatorPdf,
+  formatPdfMoney,
+  getChartCanvas,
+  canvasToPdfJpeg,
+} from "@/lib/pdf-branded";
 
-ChartJS.register(
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    PointElement,
-    LineElement
-);
-
-
-const formatNum = (num) => {
-    if (!num || isNaN(num)) return "₹ 0";
-    return "₹ " + num.toLocaleString("en-IN");
-};
-
-const SliderMarks = ({ marks = [] }) => (
-    <div className="flex justify-between text-xs text-gray-800 mt-2 px-1">
-        {marks.map((m, i) => (
-            <div key={i}>{m}</div>
-        ))}
-    </div>
-);
-
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, BarController);
 
 export default function BecomeCrorepatiPage() {
+  const [targetCrores, setTargetCrores] = useState(10000000);
+  const [ageNow, setAgeNow] = useState(30);
+  const [targetAge, setTargetAge] = useState(60);
+  const [inflation, setInflation] = useState(5);
+  const [expectedReturn, setExpectedReturn] = useState(12);
+  const [currentSavings, setCurrentSavings] = useState(500000);
+  const [showForm, setShowForm] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    goal: "",
+    calculatorType: "Crorepati Calculator",
+  });
 
-    const [targetCrores, setTargetCrores] = useState();
-    const [ageNow, setAgeNow] = useState(30);
-    const [targetAge, setTargetAge] = useState(60);
-    const [inflation, setInflation] = useState(5);
-    const [expectedReturn, setExpectedReturn] = useState(12);
-    const [currentSavings, setCurrentSavings] = useState();
+  const pieRef = useRef(null);
+  const barRef = useRef(null);
 
-    
+  useEffect(() => {
+    import("@/lib/pdf-branded").then((m) => m.loadImageAsDataURL("/newlogo.png"));
+  }, []);
 
-    const pieRef = useRef(null);
-    const barRef = useRef(null);
-    const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        mobile: "",
-        goal: "",
-        calculatorType: " Crorepati Calculator",
+  const yearsToSave = Math.max(0, targetAge - ageNow);
+  const savings = currentSavings || 0;
+  const targetToday = targetCrores || 0;
+
+  const inflationFactor = Math.pow(1 + inflation / 100, yearsToSave);
+  const targetInflationAdjusted = targetToday * inflationFactor;
+
+  const monthlyNeeded =
+    yearsToSave === 0
+      ? 0
+      : Math.max(
+          0,
+          ((targetInflationAdjusted - savings * Math.pow(1 + expectedReturn / 100, yearsToSave)) *
+            (expectedReturn / 100)) /
+            (12 * (Math.pow(1 + expectedReturn / 100 / 12, yearsToSave * 12) - 1))
+        );
+
+  const futureValue = Math.max(0, targetInflationAdjusted);
+  const totalInvestedApprox = monthlyNeeded * 12 * yearsToSave + savings;
+  const totalGrowthApprox = Math.max(0, futureValue - totalInvestedApprox);
+  const finalTargetNet = Math.max(0, targetInflationAdjusted - totalGrowthApprox);
+
+  const pieData = useMemo(
+    () => ({
+      labels: ["Amount invested", "Total growth"],
+      datasets: [
+        {
+          data: [Math.max(totalInvestedApprox, 0), Math.max(totalGrowthApprox, 0)],
+          backgroundColor: ["#93C5FD", "#2563EB"],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [totalInvestedApprox, totalGrowthApprox]
+  );
+
+  const growthData = useMemo(() => {
+    const months = 12;
+    const investedSeries = Array.from({ length: months }, (_, i) =>
+      Math.round((totalInvestedApprox / months) * (i + 1))
+    );
+    const valueSeries = Array.from({ length: months }, (_, i) =>
+      Math.round((futureValue / months) * (i + 1))
+    );
+    return {
+      labels: Array.from({ length: months }, (_, i) =>
+        `${Math.round(((i + 1) / months) * Math.max(yearsToSave, 1))}y`
+      ),
+      datasets: [
+        { label: "Invested", data: investedSeries, backgroundColor: "#93C5FD" },
+        { label: "Portfolio value", data: valueSeries, backgroundColor: "#2563EB" },
+      ],
+    };
+  }, [totalInvestedApprox, futureValue, yearsToSave]);
+
+  const downloadPDF = async () => {
+    const pie = canvasToPdfJpeg(getChartCanvas(pieRef), 420);
+    const bar = canvasToPdfJpeg(getChartCanvas(barRef), 720);
+    if (!pie || !bar) throw new Error("Charts not ready");
+    await createPremiumCalculatorPdf({
+      reportTitle: "Crorepati — Advisory Report",
+      formData,
+      summaryCards: [
+        ["Target today", formatPdfMoney(targetToday)],
+        ["Your age", `${ageNow} years`],
+        ["Target age", `${targetAge} years`],
+      ],
+      metricRows: [
+        ["Monthly SIP (approx.)", formatPdfMoney(Math.round(monthlyNeeded || 0))],
+        ["Total amount invested", formatPdfMoney(Math.round(totalInvestedApprox))],
+        ["Total growth", formatPdfMoney(Math.round(totalGrowthApprox))],
+        ["Target (inflation adj.)", formatPdfMoney(Math.round(targetInflationAdjusted))],
+      ],
+      pieImage: pie,
+      barImage: bar,
+      lineLabels: growthData.labels,
+      lineValues: growthData.datasets[1].data.map(Number),
     });
-
-
-
-    const yearsToSave = Math.max(0, targetAge - ageNow);
-
-    const inflationFactor = Math.pow(1 + inflation / 100, yearsToSave);
-    const targetInflationAdjusted = targetCrores * inflationFactor;
-
-
-    const monthlyNeeded =
-        yearsToSave === 0
-            ? 0
-            : Math.max(
-                0,
-                ((targetInflationAdjusted - currentSavings * Math.pow(1 + expectedReturn / 100, yearsToSave)) *
-                    (expectedReturn / 100)) /
-                (12 * (Math.pow(1 + expectedReturn / 100 / 12, yearsToSave * 12) - 1))
-            );
-
-
-    const futureValue = Math.max(0, targetInflationAdjusted);
-    const totalInvestedApprox = monthlyNeeded * 12 * yearsToSave + currentSavings;
-    const totalGrowthApprox = Math.max(0, futureValue - totalInvestedApprox);
-
-
-    const pieData = useMemo(
-        () => ({
-            labels: ["Amount Invested", "Total Growth"],
-            datasets: [
-                {
-                    data: [totalInvestedApprox || 1, Math.max(totalGrowthApprox || 0, 0.01)],
-                    backgroundColor: ["#93C5FD", "#3B82F6"],
-                },
-            ],
-        }),
-        [totalInvestedApprox, totalGrowthApprox]
-    );
-
-    const growthData = useMemo(() => {
-
-        const months = 12;
-        const investedSeries = Array.from({ length: months }, (_, i) =>
-            Math.round((totalInvestedApprox / months) * (i + 1))
-        );
-        const valueSeries = Array.from({ length: months }, (_, i) =>
-            Math.round((futureValue / months) * (i + 1))
-        );
-        return {
-            labels: Array.from({ length: months }, (_, i) => `${Math.round(((i + 1) / months) * yearsToSave)}y`),
-            datasets: [
-                { label: "Invested", data: investedSeries, backgroundColor: "#93C5FD" },
-                { label: "Value", data: valueSeries, backgroundColor: "#3B82F6" },
-            ],
-        };
-    }, [totalInvestedApprox, futureValue, yearsToSave]);
-
-
-    
-
-    const getCanvas = (ref) => ref.current?.canvas || ref.current?.ctx?.canvas || ref.current?.chart?.canvas || null;
-
-    const handleSubmitForm = async () => {
-        const { name, email, mobile, goal, calculatorType } = formData;
-
-
-        if (!name.trim() || !email.trim() || !mobile.trim() || !goal.trim()) {
-            showAppModal("Please fill the form before downloading PDF.");
-            return;
-        }
-
-
-        const res = await fetch("/api/sip-form", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name,
-                email,
-                mobile,
-                goal,
-                calculatorType,
-            }),
-        });
-
-        if (res.ok) {
-            setShowForm(false);
-            downloadPDF();
-            showAppModal("Your PDF has been successfully downloaded! 🎉");
-        } else {
-            showAppModal("Something went wrong! Please try again.");
-        }
-    };
-    const downloadPDF = () => {
-        const pieImg = getCanvas(pieRef)?.toDataURL("image/png");
-        const barImg = getCanvas(barRef)?.toDataURL("image/png");
-        
-
-
-
- 
-
-        if (!pieImg) {
-            showAppModal("Please wait until the chart renders.");
-            return;
-        }
-
-        const pdf = new jsPDF("p", "pt", "a4");
-        const W = pdf.internal.pageSize.getWidth();
-        const H = pdf.internal.pageSize.getHeight();
-        let y = 30;
-
-
-        pdf.setFillColor("#3B82F6");
-        pdf.rect(0, 0, W, 50, "F");
-        pdf.setFontSize(18).setTextColor("#93C5FD");
-        pdf.text("Pioneer Wealth", 40, 36);
-        pdf.setFontSize(9).text(`Generated: ${new Date().toLocaleString()}`, W - 170, 36);
-
-
-        y = 70;
-        const summaries = [
-            ["Target Today", formatNum(targetCrores)],
-            ["Your Age", `${ageNow} years`],
-            ["Target Age", `${targetAge} years`],
-        ];
-        const boxW = (W - 100) / 3;
-        summaries.forEach((s, i) => {
-            const x = 40 + i * (boxW + 10);
-            pdf.roundedRect(x, y, boxW, 45, 6, 6);
-            pdf.setFontSize(10).setTextColor("#333").text(s[0], x + 10, y + 16);
-            pdf.setFontSize(12).setTextColor("#000").text(s[1], x + 10, y + 34);
-        });
-
-
-        y += 70;
-        pdf.setFontSize(14).setTextColor("#000").text("Investment Breakdown", 40, y);
-        y += 12;
-        pdf.addImage(pieImg, "PNG", 40, y, 160, 160);
-
-
-        const tableX = 220;
-        const tableW = W - tableX - 40;
-        pdf.setFontSize(14).text("SIP Projection Values", tableX, y);
-        y += 12;
-
-        const rows = [
-            ["Monthly SIP (approx.)", monthlyNeeded ? formatNum(Math.round(monthlyNeeded)) : "₹ 0"],
-            ["Total Amount Invested", formatNum(Math.round(totalInvestedApprox))],
-            ["Total Growth", formatNum(Math.round(totalGrowthApprox))],
-            ["Target (inflation adj.)", formatNum(Math.round(targetInflationAdjusted))],
-        ];
-
-
-        y += 8;
-        pdf.setFillColor("#3B82F6");
-        pdf.rect(tableX, y, tableW, 24, "F");
-        pdf.setFontSize(11).setTextColor("#fff");
-        pdf.text("Metric", tableX + 12, y + 16);
-        pdf.text("Amount", tableX + tableW - 12, y + 16, { align: "right" });
-        y += 26;
-
-        pdf.setFontSize(10).setTextColor("#000");
-        rows.forEach((r) => {
-            pdf.setFillColor("#fafafa");
-            pdf.rect(tableX, y, tableW, 22, "F");
-            pdf.text(r[0], tableX + 12, y + 15);
-            pdf.text(r[1], tableX + tableW - 12, y + 15, { align: "right" });
-            y += 24;
-        });
-
-
-        y = Math.max(y + 12, 260);
-
-        pdf.setFontSize(14).text("Projected SIP Growth", 40, y);
-        y += 12;
-        if (barImg) {
-
-            pdf.addImage(barImg, "PNG", 40, y, W - 80, 170);
-            y += 170 + 8;
-        } else {
-            pdf.setFontSize(10).text("Growth chart not available.", 40, y);
-            y += 30;
-        }
-
-
-        const desc =
-            "This calculator gives a simple projection to help you plan how to become a crorepati. It adjusts the target for inflation up to your desired target age and estimates monthly SIP (approx.) required given an expected return. The projection is simplified — actual returns, taxes, costs and market risk will affect real outcomes. Consult a financial advisor before taking decisions.";
-
-        pdf.setFontSize(11).setTextColor("#333");
-        const leftMargin = 40;
-        const contentWidth = W - leftMargin - 40;
-        const split = pdf.splitTextToSize(desc, contentWidth);
-        pdf.text(split, leftMargin, y);
-        y += split.length * 12 + 10;
-
-
-        const disc =
-            "Disclaimer: We have gathered the data from sources believed reliable. This is for illustrative purposes only. Past performance is not indicative of future returns. Mutual fund investments are subject to market risk. Please consult your financial advisor.";
-
-        const discSplit = pdf.splitTextToSize(disc, contentWidth);
-        pdf.setFontSize(9).setTextColor("#666");
-        pdf.text(discSplit, leftMargin, y);
-
-        // Save
-       const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
-pdf.save(fileName);
-    };
-
-
-    return (
-        <div className="min-h-screen bg-gray-50 pb-16">
-            <section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
-        
-      </section>
-
-
-            <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
-                <div className="max-w-6xl mx-auto text-center px-4">
-
-                    <h1 className="text-4xl md:text-5xl font-extrabold mb-4 drop-shadow-md">
-                        Become A Crorepati<span className="text-yellow-300"> Calculator</span>
-                    </h1>
-
-                    <div className="text-blue-100 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-                        <Link href="/">Home</Link>
-
-                        <span className="text-white-400">/</span>
-                        <span>Tools & Calculators</span>
-                        <span className="text-white-400">/</span>
-                        <span >Become A Crorepati Calculators </span>
-                    </div>
-
-                    <div className="flex justify-center">
-                        <div className="w-20 h-[3px] bg-black-900 rounded-full"></div>
-                    </div>
-
-                </div>
-            </section>
-
-
-            <main className="max-w-7xl mx-auto px-6 pt-10">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                            
-
-                                <label className="block text-[15px] text-gray-800 mb-3 font-semibold">
-                                    How many Crores (at current value) you would need to consider yourself wealthy (₹)
-                                </label>
-
-                                <input
-                                    type="text"
-                                    className="
-        w-full border rounded-xl p-2 pr-12  text-gray-800 text-lg font-semibold
-        shadow-sm outline-none transition-all duration-300
-        group-hover:shadow-lg
-      "
-                                    value={targetCrores ? new Intl.NumberFormat("en-IN").format(targetCrores) : ""}
-                                    onChange={(e) => {
-                                        const raw = e.target.value.replace(/,/g, "").replace(/\D/g, "");
-                                        setTargetCrores(Number(raw || 0));
-                                    }}
-                                    placeholder="e.g. 1,00,00,000 (1 Crore)"
-                                />
-
-                                
-
-                           
-
-
-                        </div>
-
-
-                        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                            <label className="block text-[15px] text-gray-800 mb-3 font-semibold">Your current age (years)</label>
-                            <input
-                                type="number"
-                                className="w-full border rounded-xl p-2 pr-12 mb-3 text-gray-800 text-lg font-semibold shadow-sm   outline-none transition-all duration-300 group-hover:shadow-lg"
-                                value={ageNow}
-                                onChange={(e) => setAgeNow(Number(e.target.value || 0))}
-                            />
-                            <input
-                                type="range"
-                                min={10}
-                                max={100}
-                                step={1}
-                                value={ageNow}
-                                onChange={(e) => setAgeNow(Number(e.target.value))}
-                                className="w-full  "
-                            />
-                            <SliderMarks marks={["10", "25", "50", "75", "100"]} />
-                        </div>
-
-                        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                            <label className="block text-[15px] text-gray-800 mb-3 font-semibold">The age when you want to become a Crorepati (years)</label>
-                            <input
-                                type="number"
-                                className="w-full border rounded-xl p-2 mb-3 pr-12 text-gray-800 text-lg font-semibold
-        shadow-sm outline-none transition-all duration-300
-        group-hover:shadow-lg"
-                                value={targetAge}
-                                onChange={(e) => setTargetAge(Number(e.target.value || 0))}
-                            />
-                            <input
-                                type="range"
-                                min={ageNow}
-                                max={100}
-                                step={1}
-                                value={targetAge}
-                                onChange={(e) => setTargetAge(Number(e.target.value))}
-                                className="w-full"
-                            />
-                            <SliderMarks marks={["10", "25", "50", "75", "100"]} />
-                        </div>
-
-                        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                            <label className="block text-[15px] text-gray-800 mb-3 font-semibold">Expected rate of inflation (% per annum)</label>
-                            <input
-                                type="number"
-                                className="w-full border rounded-xl p-2 mb-3 pr-12 text-gray-800 text-lg font-semibold
-        shadow-sm outline-none transition-all duration-300
-        group-hover:shadow-lg"
-                                value={inflation}
-                                onChange={(e) => setInflation(Number(e.target.value || 0))}
-                            />
-                            <input
-                                type="range"
-                                min={0}
-                                max={15}
-                                step={0.1}
-                                value={inflation}
-                                onChange={(e) => setInflation(Number(e.target.value))}
-                                className="w-full"
-                            />
-                            <SliderMarks marks={["0", "2.5", "5", "7.5", "10"]} />
-                        </div>
-
-                        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                            <label className="block text-[15px] text-gray-800 mb-3 font-semibold">What rate of return would you expect your SIP to generate (% per annum)</label>
-                            <input
-                                type="number"
-                                className="w-full border rounded-xl p-2 mb-3 pr-12 text-gray-800 text-lg font-semibold
-        shadow-sm outline-none transition-all duration-300
-        group-hover:shadow-lg"
-                                value={expectedReturn}
-                                onChange={(e) => setExpectedReturn(Number(e.target.value || 0))}
-                            />
-                            <input
-                                type="range"
-                                min={0}
-                                max={25}
-                                step={0.1}
-                                value={expectedReturn}
-                                onChange={(e) => setExpectedReturn(Number(e.target.value))}
-                                className="w-full "
-                            />
-                            <SliderMarks marks={["0", "7.5", "12", "17.5", "25"]} />
-                        </div>
-
-                        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                            <label className="block text-[15px] text-gray-800 mb-3 font-semibold">
-                                How much savings you have now (₹)
-                            </label>
-
-                            <input
-                                type="text"
-                                className="w-full border rounded-xl p-2 pr-12 text-gray-800 text-lg font-semibold shadow-sm   outline-none transition-all duration-300 group-hover:shadow-lg"
-                                value={currentSavings ? new Intl.NumberFormat("en-IN").format(currentSavings) : ""}
-                                onChange={(e) => {
-                                    const raw = e.target.value.replace(/,/g, "").replace(/\D/g, "");
-                                    setCurrentSavings(Number(raw || 0));
-                                }}
-                                placeholder="e.g. 25,00,000"
-                            />
-
-                            
-
-                        </div>
-
-                    </div>
-
-
-                    <div className="space-y-6">
-
-                        <div className="bg-white p-5 rounded-xl shadow-md border border-gray-100">
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={() => setShowForm(true)}
-                                    className="bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium shadow-md hover:bg-blue-700"
-                                >
-                                    Download
-                                </button>
-                            </div>
-
-                            <h4 className="font-semibold text-gray-700 mb-3">Break-up of Total Payment</h4>
-                            <Pie ref={pieRef} data={pieData} />
-                        </div>
-
-                        <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 rounded-xl shadow-md border border-blue-400">
-
-
-                            <h4 className="font-bold  text-blue-100  text-center text-lg mb-4">
-                                Monthly SIP Amount
-                            </h4>
-
-
-                            <p className="text-center text-[20px] font-semibold  mb-6">
-                                {formatNum(Math.round(monthlyNeeded))}
-                                <span className="text-sm text-blue-100"> (years you need to save)</span>
-                            </p>
-
-
-                            <div className="py-5 border-t border-b text-center">
-                                <p className="font-semibold text-blue-100">
-                                    Total Amount Invested through SIP in years
-                                </p>
-                                <p className="text-[20px] font-semibold mt-1">{formatNum(Math.round(totalInvestedApprox))}</p>
-                            </div>
-
-
-                            <div className="py-5 border-t border-b text-center">
-                                <p className="font-semibold text-blue-100">Total Growth Amount</p>
-                                <p className="text-[20px] font-semibold mt-1">{formatNum(Math.round(totalGrowthApprox))}</p>
-                            </div>
-
-
-                            <div className="py-5 border-t border-b text-center">
-                                <p className="font-semibold text-blue-100">
-                                    Your targeted Wealth Amount (Inflation adjusted)
-                                </p>
-                                <p className="text-[20px] font-semibold mt-1">{formatNum(Math.round(targetInflationAdjusted))}</p>
-                            </div>
-
-
-
-
-                            <div className="py-5 border-t border-b text-center">
-                                <p className="font-semibold text-blue-100">
-                                    Final Targeted Amount (Minus growth of your savings)
-                                </p>
-                                <p className="text-[20px] font-semibold mt-1">
-                                    {formatNum(
-                                        Math.max(0, Math.round(targetInflationAdjusted - totalGrowthApprox))
-                                    )}
-                                </p>
-                            </div>
-
-                        </div>
-
-
-                    </div>
-
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 mt-14">
-                    <h3 className="font-semibold mb-3">Projected SIP Growth</h3>
-                    <Bar ref={barRef} data={growthData} />
-                </div>
-                 
-
-                <section className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-
-                        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 leading-relaxed text-gray-700">
-                            <h3 className="text-xl font-semibold mb-2">About this calculator</h3>
-                            <p>
-                                This is a simple strategy for accumulating wealth over a period of time by investing regularly at a fixed interval of time in mutual fund schemes.
-                                The calculator adjusts your target for inflation up to your chosen target age and gives an approximate monthly SIP amount required based on expected return assumptions.
-                            </p>
-
-                            <h4 className="mt-4 font-semibold">What is Systematic Investment Plan?</h4>
-                            <p>
-                                SIP is a way to invest a fixed sum regularly in mutual funds. It uses the principle of rupee-cost averaging and benefits from compounding.
-                            </p>
-
-                            <h4 className="mt-4 font-semibold">Important</h4>
-                            <p className="text-sm text-gray-600">
-                                The projection here is illustrative. It does not consider taxes, fees, changes to returns, or other real-world constraints. Please consult a financial advisor before acting on this information.
-                            </p>
-                        </div>
-
-
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-xl shadow-md border text-black border-gray-100 text-sm">
-                            <h4 className="font-semibold mb-3">Summary</h4>
-                            <div className="space-y-2">
-                                <div className="flex justify-between"><span>Years to save</span><b>{yearsToSave}</b></div>
-                                <div className="flex justify-between"><span>Inflation adj. target</span><b>{formatNum(Math.round(targetInflationAdjusted))}</b></div>
-                                <div className="flex justify-between"><span>Current savings</span><b>{formatNum(currentSavings)}</b></div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 text-xs text-gray-600">
-                            <strong>Disclaimer:</strong> Mutual Fund investments are subject to market risks. Past performance may or may not be sustained. Consult your advisor.
-                        </div>
-                    </div>
-                </section>
-                {showForm && (
-                    <div className="fixed inset-0 flex items-center justify-center  bg-black/40 bg-opacity-50 z-50 "
-                        onClick={() => setShowForm(false)}>
-                        <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
-                            onClick={(e) => e.stopPropagation()} >
-
-                            <h2 className="text-lg font-bold mb-4 text-gray-800 text-center">Fill Your Details</h2>
-
-                            <input type="text" placeholder="Your Name"
-                                className="border p-2 rounded w-full text-gray-800 mb-3"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-
-                            <input type="email" placeholder="Email Address"
-                                className="border p-2 rounded w-full text-gray-800 mb-3"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            />
-
-                            <input type="number" placeholder="Mobile Number"
-                                className="border p-2 rounded w-full mb-3 text-gray-800"
-                                value={formData.mobile}
-                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                            />
-
-                            <input type="text" placeholder="Your Goal (Ex: Retirement, Child Education)"
-                                className="border p-2 rounded w-full mb-3 text-gray-800"
-                                value={formData.goal}
-                                onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
-                            />
-
-                            <button
-                                onClick={handleSubmitForm}
-                                className="bg-blue-600 text-white w-full p-2 rounded-md text-gray-800"
-                            >
-                                Submit & Download PDF
-                            </button>
-
-                        </div>
-                    </div>
-                )}
-
-
-            </main>
+    return true;
+  };
+
+  const handleSubmitForm = async () => {
+    setPdfBusy(true);
+    try {
+      await submitCalculatorLeadAndDownloadPdf({
+        formData,
+        downloadPDF,
+        onDone: () => setShowForm(false),
+      });
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  return (
+    <CalculatorShell
+      title="Become a Crorepati"
+      highlight="Calculator"
+      breadcrumb="Crorepati"
+      description="Estimate the monthly SIP you need to reach your wealth target, adjusted for inflation and existing savings."
+      about={
+        <div className="space-y-4 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+          <h2 className="text-xl font-bold text-slate-900">Build wealth with disciplined SIPs</h2>
+          <p>
+            This planner inflates your target wealth to your chosen age and estimates the monthly SIP required,
+            given expected returns and current savings.
+          </p>
+          <h3 className="text-lg font-semibold text-slate-900">What is an SIP?</h3>
+          <p>
+            A Systematic Investment Plan lets you invest a fixed sum regularly in mutual funds, benefiting from
+            rupee-cost averaging and compounding over time.
+          </p>
         </div>
-    );
+      }
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <CalcCard title="Goal inputs">
+            <div className="space-y-5">
+              <div>
+                <FieldLabel>Target wealth (today&apos;s value)</FieldLabel>
+                <MoneyInput
+                  value={targetCrores}
+                  onChange={(v) => setTargetCrores(clamp(v, 0, 1e12))}
+                  placeholder="e.g. 1,00,00,000"
+                />
+              </div>
+              <div>
+                <FieldLabel>Your current age (years)</FieldLabel>
+                <NumberField
+                  value={ageNow}
+                  min={10}
+                  max={100}
+                  onChange={(v) => {
+                    const next = clamp(v, 10, 100);
+                    setAgeNow(next);
+                    if (targetAge < next) setTargetAge(next);
+                  }}
+                />
+                <RangeField
+                  value={ageNow}
+                  min={10}
+                  max={100}
+                  onChange={(v) => {
+                    setAgeNow(v);
+                    if (targetAge < v) setTargetAge(v);
+                  }}
+                />
+                <SliderMarks marks={["10", "25", "50", "75", "100"]} />
+              </div>
+              <div>
+                <FieldLabel>Target age (years)</FieldLabel>
+                <NumberField
+                  value={targetAge}
+                  min={ageNow}
+                  max={100}
+                  onChange={(v) => setTargetAge(clamp(v, ageNow, 100))}
+                />
+                <RangeField
+                  value={targetAge}
+                  min={ageNow}
+                  max={100}
+                  onChange={(v) => setTargetAge(clamp(v, ageNow, 100))}
+                />
+                <SliderMarks marks={["10", "25", "50", "75", "100"]} />
+              </div>
+              <div>
+                <FieldLabel>Expected inflation (% p.a.)</FieldLabel>
+                <NumberField
+                  value={inflation}
+                  min={0}
+                  max={15}
+                  step={0.1}
+                  onChange={(v) => setInflation(clamp(v, 0, 15))}
+                />
+                <RangeField
+                  value={inflation}
+                  min={0}
+                  max={15}
+                  step={0.1}
+                  onChange={(v) => setInflation(clamp(v, 0, 15))}
+                />
+                <SliderMarks marks={["0%", "2.5%", "5%", "7.5%", "10%", "15%"]} />
+              </div>
+              <div>
+                <FieldLabel>Expected SIP return (% p.a.)</FieldLabel>
+                <NumberField
+                  value={expectedReturn}
+                  min={0}
+                  max={25}
+                  step={0.1}
+                  onChange={(v) => setExpectedReturn(clamp(v, 0, 25))}
+                />
+                <RangeField
+                  value={expectedReturn}
+                  min={0}
+                  max={25}
+                  step={0.1}
+                  onChange={(v) => setExpectedReturn(clamp(v, 0, 25))}
+                />
+                <SliderMarks marks={["0%", "7.5%", "12%", "17.5%", "25%"]} />
+              </div>
+              <div>
+                <FieldLabel>Current savings</FieldLabel>
+                <MoneyInput
+                  value={currentSavings}
+                  onChange={(v) => setCurrentSavings(clamp(v, 0, 1e12))}
+                  placeholder="Existing corpus"
+                />
+              </div>
+            </div>
+          </CalcCard>
+
+          <ChartPanel title="Projected SIP growth">
+            <Bar ref={barRef} data={growthData} options={DISPLAY_CHART_OPTIONS} />
+          </ChartPanel>
+        </div>
+
+        <div className="space-y-5">
+          <CalcCard
+            title="Breakdown"
+            action={<DownloadButton busy={pdfBusy} onClick={() => setShowForm(true)} />}
+          >
+            <div className="mx-auto w-full max-w-[240px]">
+              <Pie ref={pieRef} data={pieData} options={DISPLAY_PIE_OPTIONS} />
+            </div>
+          </CalcCard>
+
+          <ResultPanel
+            rows={[
+              ["Years to save", String(yearsToSave)],
+              ["Monthly SIP (approx.)", formatINR(monthlyNeeded)],
+              ["Total invested", formatINR(totalInvestedApprox)],
+              ["Total growth", formatINR(totalGrowthApprox)],
+              ["Inflation-adjusted target", formatINR(targetInflationAdjusted)],
+              ["Net target after growth", formatINR(finalTargetNet)],
+            ]}
+          />
+        </div>
+      </div>
+
+      <CalculatorDownloadForm
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleSubmitForm}
+        busy={pdfBusy}
+      />
+    </CalculatorShell>
+  );
 }

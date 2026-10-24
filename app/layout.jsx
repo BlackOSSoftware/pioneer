@@ -3,54 +3,53 @@ import Script from "next/script";
 import ClientRootLayout from "./ClientRootLayout";
 import FloatingButtons from "@/components/FloatingButtons";
 import { ModalProvider } from "@/components/ui/ModalProvider";
+import {
+  SITE_URL,
+  SITE_NAME,
+  BRAND_KEYWORDS,
+  organizationJsonLd,
+  websiteJsonLd,
+  DEFAULT_OG_IMAGE,
+} from "@/lib/seo";
 
 export const metadata = {
-  metadataBase: new URL("https://www.pioneerws.in"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Pioneer Wealth Solutions | Financial Planning and Wealth Advisory",
-    template: "%s | Pioneer Wealth Solutions",
+    default: `${SITE_NAME} | Financial Advisor & Wealth Management India`,
+    template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Pioneer Wealth Solutions delivers professional financial planning, investment advisory, insurance strategy, and retirement planning for individuals and families.",
-  applicationName: "Pioneer Wealth Solutions",
-  authors: [{ name: "Pioneer Wealth Solutions", url: "https://www.pioneerws.in" }],
-  creator: "Pioneer Wealth Solutions",
-  publisher: "Pioneer Wealth Solutions",
-  keywords: [
-    "financial advisor india",
-    "wealth management",
-    "mutual fund advisory",
-    "retirement planning",
-    "insurance planning",
-    "tax planning",
-    "goal based investing",
-    "sip planning",
-  ],
+    "Pioneer Wealth Solutions (PioneerWS) — trusted financial advisor in India for mutual funds, SIP planning, insurance, retirement, and goal-based wealth management.",
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  keywords: BRAND_KEYWORDS,
   alternates: {
-    canonical: "https://www.pioneerws.in",
+    canonical: SITE_URL,
   },
   openGraph: {
-    title: "Pioneer Wealth Solutions | Financial Planning and Wealth Advisory",
+    title: `${SITE_NAME} | Financial Advisor & Wealth Management India`,
     description:
-      "Goal-based investment and financial planning solutions for long-term wealth and family protection.",
-    url: "https://www.pioneerws.in",
-    siteName: "Pioneer Wealth Solutions",
+      "Goal-based investing, SIP calculators, insurance planning, and retirement strategies from Pioneer Wealth Solutions.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
     locale: "en_IN",
     type: "website",
     images: [
       {
-        url: "/og-image.jpg",
+        url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Pioneer Wealth Solutions",
+        alt: "Pioneer Wealth Solutions — Financial Planning India",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pioneer Wealth Solutions",
-    description: "Professional financial planning and wealth advisory solutions.",
-    images: ["/og-image.jpg"],
+    title: `${SITE_NAME} | PioneerWS Financial Advisory`,
+    description: "Professional wealth advisory, SIP tools, and goal planners from Pioneer Wealth Solutions.",
+    images: [DEFAULT_OG_IMAGE],
   },
   robots: {
     index: true,
@@ -63,40 +62,30 @@ export const metadata = {
     },
   },
   category: "financial-services",
-};
-
-const organizationSchema = {
-  "@context": "https://schema.org",
-  "@type": "FinancialService",
-  "@id": "https://www.pioneerws.in/#organization",
-  name: "Pioneer Wealth Solutions",
-  url: "https://www.pioneerws.in",
-  logo: "https://www.pioneerws.in/newlogo.png",
-  description:
-    "Professional financial advisory services including mutual funds, insurance planning, retirement planning, and goal-based investment strategies.",
-  areaServed: "IN",
-  contactPoint: {
-    "@type": "ContactPoint",
-    telephone: "+91-9876543210",
-    contactType: "customer support",
-    email: "info@pioneerws.in",
+  verification: {
+    // Add Search Console code in env later: google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
   },
 };
 
 export default function RootLayout({ children }) {
+  const org = organizationJsonLd();
+  const site = websiteJsonLd();
+
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <head>
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-        />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="canonical" href={SITE_URL} />
         <Script
           id="organization-schema"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(org) }}
+        />
+        <Script
+          id="website-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(site) }}
         />
       </head>
 

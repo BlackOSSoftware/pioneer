@@ -1,404 +1,189 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import React, { useMemo, useState } from "react";
-import { Pie } from "react-chartjs-2";
+import { useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Pie } from "react-chartjs-2";
+import "@/lib/chartjs-register";
+import { DISPLAY_PIE_OPTIONS } from "@/lib/chart-pdf-options";
 import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend
-} from "chart.js";
+  GoalPlannerShell,
+  GoalCard,
+  GoalMetricGrid,
+  GoalResultPanel,
+} from "@/components/goal-planners/GoalPlannerShell";
+import GoalPdfDownload from "@/components/goal-planners/GoalPdfDownload";
+import {
+  riskReturn,
+  totalInvestedFromSip,
+  formatGoalINR,
+} from "@/lib/goal-planner-math";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+const SAMPLE_FUNDS = [
+  {
+    name: "Parag Parikh Conservative Hybrid Fund Reg Gr",
+    category: "Hybrid: Conservative",
+    allocation: 40,
+  },
+  {
+    name: "ICICI Pru Equity & Debt Gr",
+    category: "Hybrid: Aggressive",
+    allocation: 30,
+  },
+  {
+    name: "DSP Banking & PSU Debt Fund Reg Gr",
+    category: "Debt: Banking & PSU",
+    allocation: 30,
+  },
+];
 
 export default function EmergencySummaryInner() {
   const search = useSearchParams();
-  const router = useRouter();
-
-  /* ------------------- Dynamic Emergency Inputs ------------------- */
 
   const investmentType = search.get("investmentType") || "SIP";
-  const riskTolerance = search.get("risk") || "Conservative";
+  const risk = search.get("risk") || "Conservative";
+  const years = Number(search.get("years") || 1) || 1;
+  const futureValue = Number(search.get("futureValue") || 0);
+  const sip = Number(search.get("sip") || 0);
+  const expenses = Number(search.get("expenses") || 0);
+  const inflation = Number(search.get("inflation") || 0);
+  const goalName = search.get("goal") || "Emergency Fund";
+  const age = Number(search.get("age") || 0);
+  const targetFund = Number(search.get("targetFund") || expenses * 6);
 
-  // ❗ Emergency me years nahi hote → 12 months fix
-  const timeHorizon = 12;
+  const expectedReturn = riskReturn(risk);
+  const invested = totalInvestedFromSip(sip, years);
+  const growth = Math.max(futureValue - invested, 0);
 
-  const targetAmount = Number(search.get("futureValue") || 0);
-  const sipAmount = Number(search.get("sip") || 0);
-
-  const fmt = (v) =>
-    typeof v === "number" ? v.toLocaleString("en-IN") : String(v ?? "-");
-
-  /* ------------------- Pie Chart Data ------------------- */
-  const pieData = useMemo(() => {
-    const invested = 57;
-    const growth = 43;
-    return {
-      labels: ["SIP Invested Amount", "Growth Amount"],
+  const pieData = useMemo(
+    () => ({
+      labels: ["Total invested", "Estimated growth"],
       datasets: [
         {
-          data: [invested, growth],
-          backgroundColor: ["#93C5FD", "#3B82F6"]
-        }
-      ]
-    };
-  }, []);
-
-  const pieOptions = {
-    plugins: { legend: { display: false } },
-    maintainAspectRatio: false,
-    responsive: true
-  };
-
-  /* ------------------- Funds List (Static Like Original) ------------------- */
-
-  const [funds, setFunds] = useState([
-    {
-      id: 1,
-      name: "Parag Parikh Conservative Hybrid Fund Reg Gr",
-      category: "Hybrid: Conservative",
-      nav: 15.3916,
-      returns: { y1: 1.7, y3: 8.03, y5: 6.2 },
-      allocation: 18.75,
-      amount: 8000
-    },
-    {
-      id: 2,
-      name: "ICICI Pru Equity & Debt Gr",
-      category: "Hybrid: Aggressive",
-      nav: 411.92,
-      returns: { y1: 11.9, y3: 13.69, y5: 12.1 },
-      allocation: 25,
-      amount: 8000
-    },
-    {
-      id: 3,
-      name: "DSP Large Cap Fund Reg Gr",
-      category: "Equity: Large Cap",
-      nav: 488.318,
-      returns: { y1: 4.1, y3: 8.68, y5: 9 },
-      allocation: 31.25,
-      amount: 8000
-    },
-    {
-      id: 4,
-      name: "Nippon India Multi Cap Gr Gr",
-      category: "Equity: Multi Cap",
-      nav: 305.2049,
-      returns: { y1: 3.2, y3: 7.36, y5: 6.7 },
-      allocation: 25,
-      amount: 8000
-    }
-  ]);
-
-  /* ------------------ Modal Code (Same UI) ------------------ */
-
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedFundIndex, setSelectedFundIndex] = useState(null);
-  const [selectedSchemeId, setSelectedSchemeId] = useState(null);
-
-  const modalSchemes = [
-    {
-      id: 101,
-      name: "HDFC Hybrid Debt Fund - Growth Plan",
-      category: "Hybrid: Conservative",
-      nav: 59.8404,
-      y1: 6.15,
-      y3: 10.09,
-      y5: 10.56,
-      allocation: 9.89,
-      amount: 17500
-    },
-    {
-      id: 102,
-      name: "HSBC Conservative Hybrid Fund - Regular Growth",
-      category: "Hybrid: Conservative",
-      nav: 15.3916,
-      y1: 5.62,
-      y3: 9.92,
-      y5: 8.23,
-      allocation: 9.89,
-      amount: 17500
-    },
-    {
-      id: 103,
-      name: "Parag Parikh Conservative Hybrid Fund - Regular Plan - Growth",
-      category: "Hybrid: Conservative",
-      nav: 27.9751,
-      y1: 8.03,
-      y3: 11.6,
-      y5: "-",
-      allocation: 12.43,
-      amount: 22000
-    }
-  ];
-
-  function chooseScheme(id) {
-    setSelectedSchemeId(id);
-  }
-
-  function openChangeScheme(index) {
-    setSelectedFundIndex(index);
-    setSelectedSchemeId(null);
-    setOpenModal(true);
-  }
-
-  function updateScheme() {
-    if (!selectedSchemeId || selectedFundIndex === null) return;
-
-    const scheme = modalSchemes.find((s) => s.id === selectedSchemeId);
-    const updated = [...funds];
-
-    updated[selectedFundIndex] = {
-      ...updated[selectedFundIndex],
-      name: scheme.name,
-      category: scheme.category,
-      nav: scheme.nav,
-      allocation: scheme.allocation,
-      amount: scheme.amount,
-      returns: { y1: scheme.y1, y3: scheme.y3, y5: scheme.y5 }
-    };
-
-    setFunds(updated);
-    setOpenModal(false);
-  }
-
-  /* ----------------------- UI SECTION ----------------------- */
+          data: [Math.max(invested, 0), Math.max(growth, 0)],
+          backgroundColor: ["#0ea5e9", "#071a2e"],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [invested, growth]
+  );
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
-        
-      </section>
+    <GoalPlannerShell
+      title="Emergency"
+      highlight="Plan"
+      breadcrumb="Emergency"
+      description="Illustrative allocation and SIP plan for your emergency corpus."
+    >
+      <div className="space-y-6">
+        <GoalCard
+          title="Plan overview"
+          action={
+            <GoalPdfDownload
+              calculatorType="Emergency Goal Planner"
+              reportTitle="Emergency Fund — Advisory Report"
+              summaryCards={[
+                ["Goal", goalName],
+                ["Investment type", investmentType],
+                ["Risk", risk],
+                ["Horizon", `${years} year`],
+              ]}
+              metricRows={[
+                ["Current age", age ? `${age} years` : "—"],
+                ["Monthly expenses", expenses],
+                ["6-month target (today)", targetFund],
+                ["Inflation", `${inflation}%`],
+                ["Target corpus", futureValue],
+                ["Monthly SIP", sip],
+                ["Total invested", invested],
+                ["Estimated growth", growth],
+                ["Expected return", `${expectedReturn}% p.a.`],
+              ]}
+            />
+          }
+        >
+          <GoalMetricGrid
+            items={[
+              ["Investment type", investmentType],
+              ["Risk tolerance", risk],
+              ["Time horizon", `${years} year`],
+              ["Target amount", formatGoalINR(futureValue)],
+              ["Monthly SIP", formatGoalINR(sip)],
+              ["Expected return", `${expectedReturn}% p.a.`],
+            ]}
+          />
+        </GoalCard>
 
-      {/* HEADER */}
-      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
-        <h1 className="text-4xl font-semibold text-white-900 mb-2">
-          Emergency 
-        </h1>
-        <div className="flex justify-center gap-2 text-sm text-white-600">
-                        <Link href="/">Home</Link>
-
-                        <span className="text-white-400">/</span>
-                        <span>Goal</span>
-                        <span className="text-white-400">/</span>
-                        <span className="text-[white] font-medium">Wealth Creation</span>
-                    </div>
-      </section>
-
-      {/* TOP SUMMARY BOX */}
-      <section className="max-w-6xl mx-auto px-6 mt-8">
-        <div className="bg-white rounded-lg shadow-xl p-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 items-center text-center">
-
-            <div>
-              <div className="text-sm text-white-500">Investment Type</div>
-              <div className="text-[#3B82F6] font-semibold text-lg">{investmentType}</div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <GoalCard title="Invested vs growth">
+            <div className="mx-auto max-w-xs">
+              <Pie data={pieData} options={DISPLAY_PIE_OPTIONS} />
             </div>
-
-            <div>
-              <div className="text-sm text-white-500">Risk Tolerance</div>
-              <div className="text-[#3B82F6] font-semibold text-lg">{riskTolerance}</div>
+            <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-slate-600">
+              <span>
+                Invested: <strong className="text-slate-900">{formatGoalINR(invested)}</strong>
+              </span>
+              <span>
+                Growth: <strong className="text-slate-900">{formatGoalINR(growth)}</strong>
+              </span>
             </div>
+          </GoalCard>
 
-            <div>
-              <div className="text-sm text-white-500">Time Horizon</div>
-              <div className="text-[#3B82F6] font-semibold text-lg">12 Months</div>
-            </div>
-
-            <div>
-              <div className="text-sm text-white-500">Target Amount</div>
-              <div className="text-[#3B82F6] font-semibold text-lg">₹ {fmt(targetAmount)}</div>
-            </div>
-
-            <div>
-              <div className="text-sm text-white-500">Monthly SIP Required</div>
-              <div className="text-[#3B82F6] font-semibold text-lg">₹ {fmt(sipAmount)}</div>
-            </div>
-
-          </div>
-
-         
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-            
-        
-            <div className="col-span-1">
-              <div className="bg-white p-4">
-                <div style={{ height: 200 }}>
-                  <Pie data={pieData} options={pieOptions} />
-                </div>
-
-                <div className="flex gap-4 mt-3 items-center justify-center text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-[#93C5FD] inline-block rounded-sm" />
-                    SIP Invested
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 bg-[#3B82F6] inline-block rounded-sm" />
-                    Growth Amount
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* OBJECTIVE */}
-            <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Objective</h3>
-                <p className="text-gray-600 text-sm">
-                  You need to maintain an emergency fund for unexpected situations.
-                  Your investment will be based on a <strong>{riskTolerance}</strong> profile.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Our Features</h3>
-                <ul className="text-gray-600 text-sm list-disc list-inside space-y-1">
-                  <li>Zero Fee Account</li>
-                  <li>Top Funds Under One Roof</li>
-                  <li>Best Allocation Strategy</li>
-                  <li>Personalized Recommendations</li>
-                </ul>
-              </div>
-            </div>
-
-          </div>
+          <GoalResultPanel
+            title="Objective"
+            rows={[
+              ["Goal", goalName],
+              ["Profile", risk],
+              [
+                "Focus",
+                "Liquidity and capital stability for unexpected needs while building the corpus over ~12 months.",
+              ],
+              ["Required SIP", formatGoalINR(sip)],
+            ]}
+          />
         </div>
-      </section>
 
-      {/* FUNDS TABLE */}
-      <section className="max-w-6xl mx-auto px-6 mt-4 pb-16">
-        <div className="bg-white rounded-lg shadow-xl p-6 mt-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-          <h2 className="text-2xl font-semibold mb-6 text-center">Recommended Funds</h2>
-
+        <GoalCard title="Sample fund mix (illustrative)">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full min-w-[480px] text-left text-sm">
               <thead>
-                <tr className="bg-[#3B82F6] border-b text-white">
-                  <th className="p-3">Scheme Name</th>
-                  <th className="p-3">Category</th>
-                  <th className="p-3">NAV</th>
-                  <th className="p-3">Return (1Y)</th>
-                  <th className="p-3">Return (3Y)</th>
-                  <th className="p-3">Return (5Y)</th>
-                  <th className="p-3">Allocation (%)</th>
-                  <th className="p-3">Amount</th>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+                  <th className="px-3 py-3 font-semibold">Scheme</th>
+                  <th className="px-3 py-3 font-semibold">Category</th>
+                  <th className="px-3 py-3 font-semibold">Allocation</th>
+                  <th className="px-3 py-3 font-semibold">SIP share</th>
                 </tr>
               </thead>
-
               <tbody>
-                {funds.map((f, i) => (
-                  <tr key={f.id} className="border-b hover:bg-gray-50">
-                    <td className="p-4 flex justify-between items-center">
-                      {f.name}
-                      <button
-                        onClick={() => openChangeScheme(i)}
-                        className="text-blue-600 underline text-sm"
-                      >
-                        Change Scheme
-                      </button>
+                {SAMPLE_FUNDS.map((f) => (
+                  <tr key={f.name} className="border-b border-slate-100">
+                    <td className="px-3 py-3 font-medium text-slate-800">{f.name}</td>
+                    <td className="px-3 py-3 text-slate-600">{f.category}</td>
+                    <td className="px-3 py-3 tabular-nums text-slate-700">{f.allocation}%</td>
+                    <td className="px-3 py-3 tabular-nums text-slate-700">
+                      {formatGoalINR(Math.round((sip * f.allocation) / 100))}
                     </td>
-
-                    <td className="p-4">{f.category}</td>
-                    <td className="p-4">{f.nav}</td>
-                    <td className="p-4">{f.returns.y1}</td>
-                    <td className="p-4">{f.returns.y3}</td>
-                    <td className="p-4">{f.returns.y5}</td>
-                    <td className="p-4">{f.allocation}%</td>
-                    <td className="p-4">₹ {f.amount.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <p className="mt-3 text-xs text-slate-500">
+            Sample schemes for illustration only. Final selection should follow risk profile, liquidity
+            needs, and scheme documents.
+          </p>
+        </GoalCard>
 
-          {/* TOTAL + Buttons */}
-          <div className="flex items-center justify-end mt-6 gap-4">
-            <div className="bg-gray-100 p-4 rounded text-right">
-              <div className="text-sm">Total Amount</div>
-              <div className="text-2xl font-semibold">
-                ₹ {funds.reduce((a, b) => a + b.amount, 0).toLocaleString()}
-              </div>
-            </div>
-
-            <div>
-              <button onClick={() => router.back()} className="px-4 py-2 border rounded mr-3">
-                Back
-              </button>
-              <button className="px-4 py-2 bg-blue-700 text-white rounded">
-                Save Your Goal
-              </button>
-            </div>
-          </div>
-
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/Goal_Planners/Emergency"
+            className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Back to inputs
+          </Link>
         </div>
-      </section>
-
-      {/* MODAL */}
-      {openModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-6 bg-black/40">
-          <div className="bg-white w-[90%] max-w-4xl rounded shadow-lg overflow-y-auto max-h-[85vh]">
-            <div className="bg-[#3B82F6] text-white px-6 py-4 rounded-t">
-              <h3 className="text-2xl">Change the Scheme Name</h3>
-            </div>
-
-            <div className="p-6">
-              <table className="w-full">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="p-3 text-left">Scheme Name</th>
-                    <th className="p-3">Category</th>
-                    <th className="p-3">1Y</th>
-                    <th className="p-3">3Y</th>
-                    <th className="p-3">5Y</th>
-                    <th className="p-3">Select</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {modalSchemes.map((s) => (
-                    <tr key={s.id} className="border-b hover:bg-gray-50">
-                      <td className="p-3">{s.name}</td>
-                      <td className="p-3">{s.category}</td>
-                      <td className="p-3">{s.y1}</td>
-                      <td className="p-3">{s.y3}</td>
-                      <td className="p-3">{s.y5}</td>
-                      <td className="p-3 text-center">
-                        <input
-                          type="radio"
-                          name="selectScheme"
-                          checked={selectedSchemeId === s.id}
-                          onChange={() => chooseScheme(s.id)}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="flex justify-end gap-4 mt-6">
-                <button
-                  onClick={() => setOpenModal(false)}
-                  className="px-5 py-2 bg-gray-300 rounded"
-                >
-                  Close
-                </button>
-
-                <button
-                  onClick={updateScheme}
-                  className="px-5 py-2 bg-blue-700 text-white rounded"
-                >
-                  Submit
-                </button>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-    </div>
+      </div>
+    </GoalPlannerShell>
   );
 }

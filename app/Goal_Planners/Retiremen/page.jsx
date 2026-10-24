@@ -1,145 +1,258 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useMemo, useState } from "react";
+import { showAppModal } from "@/lib/pioneer-modal-bus";
+import {
+  GoalPlannerShell,
+  GoalCard,
+  GoalField,
+  GoalInput,
+  GoalSelect,
+  GoalPrimaryButton,
+  GoalMetricGrid,
+  GoalResultPanel,
+} from "@/components/goal-planners/GoalPlannerShell";
+import GoalPdfDownload from "@/components/goal-planners/GoalPdfDownload";
+import {
+  inflateAmount,
+  requiredMonthlySip,
+  riskReturn,
+  totalInvestedFromSip,
+  formatGoalINR,
+  sipGrowthSeries,
+} from "@/lib/goal-planner-math";
+
+const RISK_OPTIONS = [
+  { value: "Conservative", label: "Conservative" },
+  { value: "Moderate", label: "Moderate" },
+  { value: "Aggressive", label: "Aggressive" },
+];
+
 export default function RetirementGoalPage() {
-  const [age, setAge] = useState("");
-  const [retireAge, setRetireAge] = useState("");
-  const [lifeExpectancy, setLifeExpectancy] = useState("");
-  const [expenses, setExpenses] = useState("");
-  const [inflation, setInflation] = useState("");
+  const [age, setAge] = useState("35");
+  const [retireAge, setRetireAge] = useState("60");
+  const [lifeExpectancy, setLifeExpectancy] = useState("85");
+  const [expenses, setExpenses] = useState("50000");
+  const [inflation, setInflation] = useState("6");
   const [returns, setReturns] = useState("");
-  const [savedAmount, setSavedAmount] = useState("");
-  const [goalName, setGoalName] = useState("");
-  const [risk, setRisk] = useState("Conservative");
+  const [savedAmount, setSavedAmount] = useState("0");
+  const [goalName, setGoalName] = useState("Retirement");
+  const [risk, setRisk] = useState("Moderate");
+
+  const plan = useMemo(() => {
+    const currentAge = Number(age) || 0;
+    const retire = Number(retireAge) || 0;
+    const life = Number(lifeExpectancy) || 0;
+    const monthlyExp = Number(expenses) || 0;
+    const infl = Number(inflation) || 0;
+    const saved = Number(savedAmount) || 0;
+    const expectedReturn =
+      returns !== "" && returns != null ? Number(returns) : riskReturn(risk);
+
+    const yearsToRetire = Math.max(0, retire - currentAge);
+    const yearsInRetirement = Math.max(0, life - retire);
+    const futureMonthlyExpense = inflateAmount(monthlyExp, infl, yearsToRetire);
+    const corpus = Math.round(futureMonthlyExpense * 12 * yearsInRetirement);
+    const savedFuture = inflateAmount(saved, expectedReturn, yearsToRetire);
+    const gap = Math.max(0, corpus - savedFuture);
+    const sip = requiredMonthlySip(gap, yearsToRetire, expectedReturn);
+    const totalInvested = totalInvestedFromSip(sip, yearsToRetire);
+    const growthSeries = sipGrowthSeries(sip, yearsToRetire, expectedReturn);
+
+    return {
+      currentAge,
+      retire,
+      life,
+      monthlyExp,
+      infl,
+      saved,
+      expectedReturn,
+      yearsToRetire,
+      yearsInRetirement,
+      futureMonthlyExpense,
+      corpus,
+      savedFuture,
+      gap,
+      sip,
+      totalInvested,
+      growthSeries,
+    };
+  }, [age, retireAge, lifeExpectancy, expenses, inflation, returns, savedAmount, risk]);
+
+  const resultsReady =
+    plan.yearsToRetire > 0 && plan.yearsInRetirement > 0 && plan.monthlyExp > 0;
+
+  const handleBuild = () => {
+    if (!age || !retireAge || !lifeExpectancy || !expenses || !inflation) {
+      showAppModal("Please fill age, retirement age, life expectancy, expenses, and inflation.", {
+        variant: "info",
+        title: "Required fields",
+      });
+      return;
+    }
+    if (plan.yearsToRetire <= 0) {
+      showAppModal("Retirement age must be greater than your current age.", {
+        variant: "info",
+        title: "Invalid ages",
+      });
+      return;
+    }
+    if (plan.yearsInRetirement <= 0) {
+      showAppModal("Life expectancy must be greater than retirement age.", {
+        variant: "info",
+        title: "Invalid ages",
+      });
+      return;
+    }
+    document.getElementById("retirement-results")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <div className="w-full bg-white">
-<section className="py-16 px-6 w-full  -mt-10 from-white to-indigo-500 text-white bg-white  pb-4">
-        
-      </section>
-
-
-      
-      <section className="py-20 px-6 mx-6 md:mx-12 bg-gradient-to-r mt-5 from-blue-600 to-indigo-500 text-center text-white rounded-3xl shadow-lg pt-5 pb-5">
-        <div className="max-w-6xl mx-auto text-center px-4">
-                    <h1 className="text-4xl font-semibold text-white-900 mb-2">
-                        Retirement
-                    </h1>
-                    <div className="flex justify-center gap-2 text-sm text-white-600">
-                        <Link href="/">Home</Link>
-
-                        <span className="text-white-400">/</span>
-                        <span>Goal</span>
-                        <span className="text-white-400">/</span>
-                        <span className="text-[white] font-medium">Retirement</span>
-                    </div>
-                </div>
-      </section>
-
-    
-      <section className="w-full py-16 flex justify-center">
-        <div className="bg-white rounded-xl shadow-2xl p-12 max-w-6xl w-full">
-          <div className="text-gray-700 text-[18px] leading-relaxed space-y-14">
-
-           
-            <p className="text-center">
-              You are
-              <input
+    <GoalPlannerShell
+      title="Retirement"
+      highlight="Planner"
+      breadcrumb="Retirement"
+      description="Build a conservative retirement corpus from today's expenses, inflate to retirement, net off existing savings, and see the SIP you need."
+    >
+      <div className="space-y-6">
+        <GoalCard title="Retirement inputs">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <GoalField label="Current age">
+              <GoalInput type="number" min={18} max={80} value={age} onChange={setAge} />
+            </GoalField>
+            <GoalField label="Retirement age">
+              <GoalInput
                 type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-28 pb-1 text-center"
-              />
-              years old and want to retire at age
-              <input
-                type="number"
+                min={40}
+                max={80}
                 value={retireAge}
-                onChange={(e) => setRetireAge(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-28 pb-1 text-center"
+                onChange={setRetireAge}
               />
-              years and your life expectancy is
-              <input
+            </GoalField>
+            <GoalField label="Life expectancy">
+              <GoalInput
                 type="number"
+                min={60}
+                max={110}
                 value={lifeExpectancy}
-                onChange={(e) => setLifeExpectancy(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-28 pb-1 text-center"
+                onChange={setLifeExpectancy}
               />
-              years.
-            </p>
-
-           
-            <p className="text-center">
-              Your current monthly household expenses are
-              <input
+            </GoalField>
+            <GoalField label="Monthly expenses today (₹)">
+              <GoalInput
                 type="number"
+                min={0}
                 value={expenses}
-                onChange={(e) => setExpenses(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-40 pb-1 text-center"
+                onChange={setExpenses}
+                placeholder="50000"
               />
-              . You assume the inflation to be
-              <input
+            </GoalField>
+            <GoalField label="Inflation (% p.a.)">
+              <GoalInput
                 type="number"
+                min={0}
+                max={20}
+                step={0.1}
                 value={inflation}
-                onChange={(e) => setInflation(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-24 pb-1 text-center"
+                onChange={setInflation}
               />
-              %  <br/><br/>
-              and expect
-             
-              <input
+            </GoalField>
+            <GoalField
+              label="Expected return (% p.a.)"
+              hint="Optional — leave blank to use risk-based return"
+            >
+              <GoalInput
                 type="number"
+                min={0}
+                max={30}
+                step={0.1}
                 value={returns}
-                onChange={(e) => setReturns(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-24 pb-1 text-center"
+                onChange={setReturns}
+                placeholder="Optional"
               />
-               % earning on retirement corpus.
-            </p>
-
-          
-            <p className="text-center">
-              You have already saved
-              <input
+            </GoalField>
+            <GoalField label="Already saved (₹)">
+              <GoalInput
                 type="number"
+                min={0}
                 value={savedAmount}
-                onChange={(e) => setSavedAmount(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-40 pb-1 text-center"
+                onChange={setSavedAmount}
+                placeholder="0"
               />
-              for your Retirement. You would like to name this goal as
-              <input
-                type="text"
-                value={goalName}
-                onChange={(e) => setGoalName(e.target.value)}
-                className="mx-2 border-b border-gray-400 focus:border-blue-600 outline-none w-40 pb-1 text-center"
-              />
-              .
-            </p>
-
-            
-            <p className="text-center">
-              You can take
-              <select
-                value={risk}
-                onChange={(e) => setRisk(e.target.value)}
-                className="mx-2 border-b border-gray-400 outline-none bg-transparent pb-1"
-              >
-                <option value="Conservative">Conservative</option>
-                <option value="Moderate">Moderate</option>
-                <option value="Aggressive">Aggressive</option>
-              </select>
-              risk with your investments.
-            </p>
-
-            
-            <div className="text-center pt-6">
-              <button className="px-12 py-3 bg-blue-900 text-white rounded-md font-semibold hover:bg-blue-800 transition">
-                Build My Goal
-              </button>
-            </div>
-
+            </GoalField>
+            <GoalField label="Goal name">
+              <GoalInput type="text" value={goalName} onChange={setGoalName} />
+            </GoalField>
+            <GoalField label="Risk profile">
+              <GoalSelect value={risk} onChange={setRisk} options={RISK_OPTIONS} />
+            </GoalField>
           </div>
-        </div>
-      </section>
-    </div>
+          <div className="mt-8 flex justify-center sm:justify-start">
+            <GoalPrimaryButton onClick={handleBuild}>Build My Goal</GoalPrimaryButton>
+          </div>
+        </GoalCard>
+
+        {resultsReady ? (
+          <div id="retirement-results" className="space-y-6">
+            <GoalCard
+              title={`Plan for “${goalName || "Retirement"}”`}
+              action={
+                <GoalPdfDownload
+                  calculatorType="Retirement Goal"
+                  reportTitle="Retirement Goal Plan"
+                  summaryCards={[
+                    ["Goal", goalName || "Retirement"],
+                    ["Risk", risk],
+                    ["Years to retire", plan.yearsToRetire],
+                    ["Monthly SIP", plan.sip],
+                  ]}
+                  metricRows={[
+                    ["Corpus needed", plan.corpus],
+                    ["Savings at retirement", plan.savedFuture],
+                    ["Funding gap", plan.gap],
+                    ["Future monthly expense", plan.futureMonthlyExpense],
+                    ["Years in retirement", plan.yearsInRetirement],
+                    ["Expected return %", `${plan.expectedReturn}%`],
+                    ["Total SIP invested (est.)", plan.totalInvested],
+                  ]}
+                  lineLabels={plan.growthSeries.labels}
+                  lineValues={plan.growthSeries.values}
+                />
+              }
+            >
+              <GoalMetricGrid
+                items={[
+                  ["Years to retire", String(plan.yearsToRetire)],
+                  ["Years in retirement", String(plan.yearsInRetirement)],
+                  ["Future monthly expense", formatGoalINR(plan.futureMonthlyExpense)],
+                  ["Corpus needed", formatGoalINR(plan.corpus)],
+                ]}
+              />
+            </GoalCard>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <GoalResultPanel
+                title="Funding plan"
+                rows={[
+                  ["Existing savings (today)", formatGoalINR(plan.saved)],
+                  ["Savings at retirement", formatGoalINR(plan.savedFuture)],
+                  ["Funding gap", formatGoalINR(plan.gap)],
+                  ["Required monthly SIP", formatGoalINR(plan.sip)],
+                ]}
+              />
+              <GoalResultPanel
+                title="Assumptions"
+                rows={[
+                  ["Inflation", `${plan.infl}% p.a.`],
+                  ["Expected return", `${plan.expectedReturn}% p.a.`],
+                  ["Risk profile", risk],
+                  ["Total SIP invested (est.)", formatGoalINR(plan.totalInvested)],
+                ]}
+              />
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </GoalPlannerShell>
   );
 }

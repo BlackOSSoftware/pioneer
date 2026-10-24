@@ -136,8 +136,9 @@ export default function Hero() {
 
   return (
     <div className="overflow-x-hidden bg-[linear-gradient(180deg,#f7fbff_0%,#ffffff_30%,#f8fafc_100%)]">
-      <section className="relative isolate min-h-[100dvh] overflow-hidden border-b border-slate-200">
-        <div className="absolute inset-0 min-h-[100dvh]">
+      {/* First viewport banner — fits under navbar without scroll on 320px+ */}
+      <section className="relative isolate flex h-[calc(100dvh-3.5rem)] max-h-[900px] min-h-[420px] overflow-hidden border-b border-slate-200 sm:h-[calc(100dvh-70px)]">
+        <div className="absolute inset-0">
           {HERO_SLIDES.map((slide, i) => (
             <Image
               key={slide.image}
@@ -149,91 +150,113 @@ export default function Hero() {
               className={`object-cover object-center transition-opacity duration-1000 ${i === index ? "opacity-100" : "opacity-0"}`}
             />
           ))}
-          <div className="absolute inset-0 bg-[linear-gradient(110deg,rgba(2,6,23,0.88)_0%,rgba(2,6,23,0.76)_44%,rgba(2,6,23,0.55)_72%,rgba(2,6,23,0.25)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(110deg,rgba(2,6,23,0.9)_0%,rgba(2,6,23,0.78)_42%,rgba(2,6,23,0.5)_70%,rgba(2,6,23,0.28)_100%)]" />
         </div>
 
-        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-7xl flex-col justify-center gap-10 px-3 py-20 min-[380px]:px-4 sm:px-6 sm:py-24 lg:grid lg:min-h-[100dvh] lg:grid-cols-12 lg:items-center lg:gap-12 lg:px-8 lg:py-0">
+        <div className="relative mx-auto flex h-full w-full max-w-7xl flex-col justify-center gap-4 px-3 py-4 min-[380px]:px-4 min-[380px]:py-6 sm:gap-6 sm:px-6 sm:py-8 lg:grid lg:grid-cols-12 lg:items-center lg:gap-10 lg:px-8 lg:py-10">
           <div className="max-w-xl text-white lg:col-span-7">
-            <p className="inline-flex max-w-full items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-[11px] font-semibold tracking-wide backdrop-blur min-[380px]:px-4 min-[380px]:text-xs">
-              <BadgeCheck size={14} />
-              <span className="truncate">{active.eyebrow}</span>
+            <p className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-wide backdrop-blur min-[380px]:gap-2 min-[380px]:px-3.5 min-[380px]:text-xs">
+              <BadgeCheck size={12} className="shrink-0 min-[380px]:size-[14px]" />
+              <span className="truncate">Pioneer Wealth Solutions · {active.eyebrow}</span>
             </p>
-            <h1 className="mt-4 break-words text-2xl font-bold leading-tight min-[380px]:text-3xl sm:mt-5 sm:text-5xl">{active.title}</h1>
-            <p className="mt-4 text-sm leading-6 text-slate-200 min-[380px]:text-base min-[380px]:leading-7">{active.description}</p>
+            {/* One stable H1 for SEO; slide copy uses H2 */}
+            <h1 className="mt-2.5 break-words text-[1.2rem] font-bold leading-snug text-white min-[380px]:mt-3 min-[380px]:text-2xl sm:mt-4 sm:text-3xl lg:text-4xl lg:leading-tight">
+              Pioneer Wealth Solutions — Financial Advisor and Wealth Management in India
+            </h1>
+            <h2 className="mt-2 line-clamp-3 break-words text-[1.05rem] font-semibold leading-snug text-amber-200 min-[380px]:text-xl sm:mt-3 sm:line-clamp-none sm:text-2xl lg:text-3xl">
+              {active.title}
+            </h2>
+            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-200 min-[380px]:mt-3 min-[380px]:line-clamp-3 min-[380px]:text-sm min-[380px]:leading-6 sm:mt-4 sm:line-clamp-none sm:text-base sm:leading-7">
+              {active.description}
+            </p>
 
-            <div className="mt-7 flex flex-col items-stretch gap-3 min-[380px]:mt-8 min-[380px]:flex-row min-[380px]:flex-wrap min-[380px]:items-center">
+            <div className="mt-4 flex flex-col items-stretch gap-2 min-[380px]:mt-5 min-[380px]:flex-row min-[380px]:flex-wrap min-[380px]:items-center min-[380px]:gap-3 sm:mt-6">
               <Link
                 href={active.ctaHref}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-900/30 transition-all duration-300 hover:-translate-y-0.5 hover:bg-sky-400 min-[380px]:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-sky-900/30 transition-all duration-300 hover:-translate-y-0.5 hover:bg-sky-400 min-[380px]:w-auto min-[380px]:px-5 min-[380px]:py-3 min-[380px]:text-sm"
               >
-                {active.ctaText}
-                <ArrowRight size={16} />
+                <span className="truncate">{active.ctaText}</span>
+                <ArrowRight size={14} className="shrink-0" />
               </Link>
               <Link
                 href="/contact"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-white/40 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20 min-[380px]:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-white/40 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-white/20 min-[380px]:w-auto min-[380px]:px-5 min-[380px]:py-3 min-[380px]:text-sm"
               >
                 Book Consultation
               </Link>
             </div>
 
-            <div className="mt-8 flex items-center gap-2">
+            <div className="mt-4 flex items-center gap-1.5 sm:mt-6 sm:gap-2">
               {HERO_SLIDES.map((_, dotIdx) => (
                 <button
                   key={dotIdx}
                   type="button"
                   onClick={() => setIndex(dotIdx)}
-                  className={`h-2.5 rounded-full transition-all ${dotIdx === index ? "w-8 bg-white" : "w-2.5 bg-white/45"}`}
+                  className={`h-2 rounded-full transition-all sm:h-2.5 ${dotIdx === index ? "w-6 bg-white sm:w-8" : "w-2 bg-white/45 sm:w-2.5"}`}
                   aria-label={`Go to slide ${dotIdx + 1}`}
                 />
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 min-[480px]:grid sm:grid-cols-3 lg:col-span-5 lg:grid-cols-1 lg:justify-self-end lg:max-w-sm">
+          <div className="grid grid-cols-3 gap-1.5 min-[380px]:gap-2 sm:gap-3 lg:col-span-5 lg:grid-cols-1 lg:justify-self-end lg:max-w-sm lg:gap-3">
             {HIGHLIGHTS.map((item) => (
-              <div key={item.label} className="rounded-2xl border border-white/25 bg-white/10 p-5 text-white backdrop-blur-md">
-                <p className="text-2xl font-bold sm:text-3xl">{item.value}</p>
-                <p className="mt-1 text-xs font-medium tracking-wide text-slate-200 sm:text-sm">{item.label}</p>
+              <div
+                key={item.label}
+                className="rounded-xl border border-white/25 bg-white/10 px-2 py-2.5 text-center text-white backdrop-blur-md min-[380px]:rounded-2xl min-[380px]:px-3 min-[380px]:py-3 sm:p-4 lg:p-5 lg:text-left"
+              >
+                <p className="text-sm font-bold min-[380px]:text-base sm:text-2xl lg:text-3xl">{item.value}</p>
+                <p className="mt-0.5 text-[9px] font-medium leading-tight tracking-wide text-slate-200 min-[380px]:text-[10px] sm:mt-1 sm:text-xs lg:text-sm">
+                  {item.label}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-10 lg:grid-cols-2">
+      <section className="mx-auto max-w-7xl px-3 py-10 min-[380px]:px-4 sm:px-6 sm:py-16 lg:px-8">
+        <div className="grid items-center gap-8 sm:gap-10 lg:grid-cols-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">About Pioneer Wealth</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Financial clarity with disciplined execution</h2>
-            <p className="mt-4 text-base leading-7 text-slate-600">
-              We combine advisory discipline, data-backed planning, and clear communication to help you make confident
-              long-term financial decisions.
+            <h2 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl">
+              Why families choose Pioneer Wealth Solutions
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600 sm:mt-4 sm:text-base sm:leading-7">
+              PioneerWS combines advisory discipline, data-backed planning, and clear communication so you can invest
+              with confidence — from SIPs and mutual funds to insurance and retirement goals.
             </p>
-            <div className="mt-6 space-y-3">
-              <p className="flex items-center gap-2 text-sm text-slate-700"><Target size={16} className="text-sky-700" /> Goal-based investment roadmaps</p>
-              <p className="flex items-center gap-2 text-sm text-slate-700"><GraduationCap size={16} className="text-sky-700" /> Family-focused education and retirement planning</p>
-              <p className="flex items-center gap-2 text-sm text-slate-700"><Home size={16} className="text-sky-700" /> Milestone planning for home and legacy goals</p>
+            <div className="mt-5 space-y-3 sm:mt-6">
+              <p className="flex items-center gap-2 text-sm text-slate-700"><Target size={16} className="shrink-0 text-sky-700" /> Goal-based investment roadmaps</p>
+              <p className="flex items-center gap-2 text-sm text-slate-700"><GraduationCap size={16} className="shrink-0 text-sky-700" /> Family-focused education and retirement planning</p>
+              <p className="flex items-center gap-2 text-sm text-slate-700"><Home size={16} className="shrink-0 text-sky-700" /> Milestone planning for home and legacy goals</p>
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3 text-sm font-semibold">
+              <Link href="/about" className="text-sky-700 hover:underline">About PioneerWS</Link>
+              <Link href="/Calculators/sip-return" className="text-sky-700 hover:underline">SIP Calculator</Link>
+              <Link href="/Goal_Planners/Dream-home" className="text-sky-700 hover:underline">Dream Home Planner</Link>
+              <Link href="/Services" className="text-sky-700 hover:underline">Our Services</Link>
+              <Link href="/contact" className="text-sky-700 hover:underline">Contact</Link>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-2 shadow-xl">
-            <Image src="/team1.jpg" alt="Pioneer Wealth advisory team" width={1000} height={700} className="h-[360px] w-full rounded-2xl object-cover" />
-            <div className="absolute bottom-5 left-5 rounded-xl bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Advisory Excellence</p>
-              <p className="text-sm font-semibold text-slate-900">Trusted by families and business owners</p>
+          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl sm:rounded-3xl sm:p-2">
+            <Image src="/team1.jpg" alt="Pioneer Wealth Solutions advisory team helping clients with financial planning in India" width={1000} height={700} className="h-[220px] w-full rounded-xl object-cover min-[380px]:h-[280px] sm:h-[360px] sm:rounded-2xl" />
+            <div className="absolute bottom-3 left-3 rounded-xl bg-white/90 px-3 py-2 shadow-lg backdrop-blur sm:bottom-5 sm:left-5 sm:px-4 sm:py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700 sm:text-xs">Advisory Excellence</p>
+              <p className="text-xs font-semibold text-slate-900 sm:text-sm">Trusted by families and business owners</p>
             </div>
           </div>
         </div>
       </section>
 
       <section className="border-y border-slate-200 bg-slate-50/70">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mb-10 text-center">
+        <div className="mx-auto max-w-7xl px-3 py-10 min-[380px]:px-4 sm:px-6 sm:py-16 lg:px-8">
+          <div className="mb-8 text-center sm:mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Core Services</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Professional financial solutions</h2>
+            <h2 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl">Professional financial solutions</h2>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
             {SERVICES.map((item) => (
               <ServiceCard key={item.title} {...item} />
             ))}
@@ -241,13 +264,13 @@ export default function Hero() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-10 text-center">
+      <section className="mx-auto max-w-7xl px-3 py-10 min-[380px]:px-4 sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-8 text-center sm:mb-10">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Client Feedback</p>
-          <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">What clients value most</h2>
+          <h2 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl">What clients value most</h2>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3 md:gap-5">
           {TESTIMONIALS.map((item) => (
             <TestimonialCard key={item.name} {...item} />
           ))}

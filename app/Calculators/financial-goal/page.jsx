@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
-import jsPDF from "jspdf";
+import "@/lib/chartjs-fix";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -10,34 +10,45 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  BarController,
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
-import { showAppModal } from "@/lib/pioneer-modal-bus";
+import { DISPLAY_CHART_OPTIONS, DISPLAY_PIE_OPTIONS } from "@/lib/chart-pdf-options";
+import { submitCalculatorLeadAndDownloadPdf } from "@/lib/calculator-pdf-submit";
+import CalculatorDownloadForm from "@/components/calculators/CalculatorDownloadForm";
+import {
+  CalculatorShell,
+  CalcCard,
+  FieldLabel,
+  MoneyInput,
+  NumberField,
+  RangeField,
+  SliderMarks,
+  ResultPanel,
+  DownloadButton,
+  ChartPanel,
+  formatINR,
+  clamp,
+} from "@/components/calculators/CalculatorShell";
+import {
+  createPremiumCalculatorPdf,
+  formatPdfMoney,
+  getChartCanvas,
+  canvasToPdfJpeg,
+} from "@/lib/pdf-branded";
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement
-);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, BarController);
 
-const formatNum = (num) => {
-  if (!num || isNaN(num)) return "₹ 0";
-  return "₹ " + Math.round(num).toLocaleString("en-IN");
-};
+const DEFAULT_GOALS = [
+  { name: "Child education", amount: 3000000, years: 10 },
+  { name: "Marriage", amount: 2000000, years: 15 },
+];
 
 export default function CompositeFinancialGoalCalculator() {
-
-  const [goals, setGoals] = useState([
-    { name: "Child Education", amount: 3000000, years: 10 },
-    { name: "Marriage", amount: 2000000, years: 15 },
-  ]);
-
+  const [goals, setGoals] = useState(DEFAULT_GOALS);
   const [annualReturn, setAnnualReturn] = useState(12);
-
   const [showForm, setShowForm] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -49,43 +60,42 @@ export default function CompositeFinancialGoalCalculator() {
   const pieRef = useRef(null);
   const barRef = useRef(null);
 
-  const simulation = useMemo(() => {
+  useEffect(() => {
+    import("@/lib/pdf-branded").then((m) => m.loadImageAsDataURL("/newlogo.png"));
+  }, []);
 
+  const simulation = useMemo(() => {
     const monthlyRate = annualReturn / 100 / 12;
 
     let combinedSIP = 0;
     let combinedFutureValue = 0;
     let combinedInvested = 0;
-
     const goalDetails = [];
 
     goals.forEach((goal) => {
-
-      const months = goal.years * 12;
+      const years = Math.max(1, Number(goal.years) || 1);
+      const amount = Math.max(0, Number(goal.amount) || 0);
+      const months = years * 12;
 
       let sip = 0;
-
       if (monthlyRate === 0) {
-        sip = goal.amount / months;
+        sip = amount / months;
       } else {
-        sip =
-          goal.amount *
-          monthlyRate /
-          (Math.pow(1 + monthlyRate, months) - 1);
+        sip = (amount * monthlyRate) / (Math.pow(1 + monthlyRate, months) - 1);
       }
 
       const totalInvested = sip * months;
-
       combinedSIP += sip;
-      combinedFutureValue += goal.amount;
+      combinedFutureValue += amount;
       combinedInvested += totalInvested;
 
       goalDetails.push({
         ...goal,
+        years,
+        amount,
         sip,
         totalInvested,
       });
-
     });
 
     return {
@@ -95,274 +105,240 @@ export default function CompositeFinancialGoalCalculator() {
       combinedInvested,
       growth: combinedFutureValue - combinedInvested,
     };
-
   }, [goals, annualReturn]);
 
-  const pieData = {
-    labels: ["Total Invested", "Total Future Goal Value"],
-    datasets: [
-      {
-        data: [
-          simulation.combinedInvested,
-          simulation.combinedFutureValue,
-        ],
-        backgroundColor: ["#93C5FD", "#2563EB"],
-      },
-    ],
+  const pieData = useMemo(
+    () => ({
+      labels: ["Total invested", "Total future goal value"],
+      datasets: [
+        {
+          data: [
+            Math.max(simulation.combinedInvested, 0),
+            Math.max(simulation.combinedFutureValue, 0),
+          ],
+          backgroundColor: ["#93C5FD", "#2563EB"],
+          borderWidth: 0,
+        },
+      ],
+    }),
+    [simulation.combinedInvested, simulation.combinedFutureValue]
+  );
+
+  const growthData = useMemo(
+    () => ({
+      labels: simulation.goalDetails.map((g) => g.name || "Goal"),
+      datasets: [
+        {
+          label: "Required monthly SIP",
+          data: simulation.goalDetails.map((g) => Math.round(g.sip)),
+          backgroundColor: "#2563EB",
+        },
+      ],
+    }),
+    [simulation.goalDetails]
+  );
+
+  const updateGoal = (index, patch) => {
+    setGoals((prev) => prev.map((g, i) => (i === index ? { ...g, ...patch } : g)));
   };
 
-  const growthData = {
-    labels: simulation.goalDetails.map((g) => g.name),
-    datasets: [
-      {
-        label: "Required Monthly SIP",
-        data: simulation.goalDetails.map((g) =>
-          Math.round(g.sip)
-        ),
-        backgroundColor: "#2563EB",
-      },
-    ],
+  const addGoal = () => {
+    setGoals((prev) => [...prev, { name: `Goal ${prev.length + 1}`, amount: 1000000, years: 10 }]);
   };
 
-  const getCanvas = (ref) =>
-    ref.current?.canvas ||
-    ref.current?.ctx?.canvas ||
-    ref.current?.chart?.canvas ||
-    null;
+  const removeGoal = (index) => {
+    setGoals((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
+  };
 
-  const downloadPDF = () => {
-
-    const pieCanvas = getCanvas(pieRef);
-    const barCanvas = getCanvas(barRef);
-
-    if (!pieCanvas || !barCanvas) {
-      showAppModal("Please wait... charts not ready.");
-      return;
-    }
-
-    const pie = pieCanvas.toDataURL("image/png");
-    const bar = barCanvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "pt", "a4");
-    const W = pdf.internal.pageSize.getWidth();
-    let y = 35;
-
-    // HEADER
-    pdf.setFillColor("#2563EB");
-    pdf.rect(0, 0, W, 55, "F");
-
-    pdf.setTextColor("#fff");
-    pdf.setFontSize(18);
-    pdf.text("Pioneer Wealth", 30, 35);
-
-    pdf.setFontSize(9);
-    pdf.text(`Generated: ${new Date().toLocaleString()}`, W - 180, 35);
-
-    y = 75;
-
-    pdf.setFontSize(14).setTextColor("#000");
-    pdf.text("Composite Financial Goals Summary", 30, y);
-
-    y += 25;
-
-    simulation.goalDetails.forEach((g) => {
-
-      pdf.setFillColor("#F3F4F6");
-      pdf.rect(30, y - 12, W - 60, 22, "F");
-
-      pdf.setTextColor("#000");
-      pdf.setFontSize(10);
-
-      pdf.text(
-        `${g.name} (${g.years} yrs)`,
-        40,
-        y + 3
-      );
-
-      pdf.text(
-        formatNum(g.sip),
-        W - 40,
-        y + 3,
-        { align: "right" }
-      );
-
-      y += 22;
+  const downloadPDF = async () => {
+    const pie = canvasToPdfJpeg(getChartCanvas(pieRef), 420);
+    const bar = canvasToPdfJpeg(getChartCanvas(barRef), 720);
+    if (!pie || !bar) throw new Error("Charts not ready");
+    await createPremiumCalculatorPdf({
+      reportTitle: "Financial Goals — Advisory Report",
+      formData,
+      summaryCards: [
+        ["Number of goals", String(simulation.goalDetails.length)],
+        ["Expected return", `${annualReturn}%`],
+        ["Combined monthly SIP", formatPdfMoney(simulation.combinedSIP)],
+      ],
+      metricRows: [
+        ...simulation.goalDetails.map((g) => [
+          `${g.name} (${g.years} yrs)`,
+          formatPdfMoney(g.sip),
+        ]),
+        ["Total monthly SIP required", formatPdfMoney(simulation.combinedSIP)],
+      ],
+      pieImage: pie,
+      barImage: bar,
+      lineLabels: simulation.goalDetails.map((g) => g.name),
+      lineValues: simulation.goalDetails.map((g) => Math.round(g.sip)),
     });
-
-    y += 20;
-
-    pdf.setFontSize(12);
-    pdf.text(
-      `Total Monthly SIP Required: ${formatNum(simulation.combinedSIP)}`,
-      30,
-      y
-    );
-
-    pdf.addPage();
-    y = 40;
-
-    pdf.setFontSize(14);
-    pdf.text("Investment Breakdown", 30, y);
-
-    y += 15;
-    pdf.addImage(pie, "PNG", 30, y, 180, 160);
-
-    pdf.addPage();
-    y = 40;
-
-    pdf.setFontSize(14);
-    pdf.text("Goal-wise SIP Requirement", 30, y);
-
-    y += 15;
-    pdf.addImage(bar, "PNG", 30, y, W - 60, 220);
-
-    const fileName = `${formData.name.replace(/\s+/g, "-")}-${formData.calculatorType.replace(/\s+/g, "-")}.pdf`;
-    pdf.save(fileName);
+    return true;
   };
 
   const handleSubmitForm = async () => {
-
-    const { name, email, mobile, goal } = formData;
-
-    if (!name || !email || !mobile || !goal) {
-      showAppModal("Please fill all details");
-      return;
+    setPdfBusy(true);
+    try {
+      await submitCalculatorLeadAndDownloadPdf({
+        formData,
+        downloadPDF,
+        onDone: () => setShowForm(false),
+      });
+    } finally {
+      setPdfBusy(false);
     }
-
-    await fetch("/api/sip-form", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-
-    setShowForm(false);
-    downloadPDF();
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 pb-20 pt-16">
-
-      <section className="py-16 px-6 mx-6 md:mx-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl shadow-lg text-center text-white">
-        <h1 className="text-4xl font-bold">
-          Composite Financial Goal Calculator
-        </h1>
-      </section>
-
-      <main className="max-w-7xl mx-auto px-6 pt-10">
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-          <div className="lg:col-span-2 space-y-6 text-black">
-
-            {goals.map((goal, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow border">
-                <label className="block font-semibold mb-2 text-gray-800">
-                  Goal Name
-                </label>
-                <input
-                  value={goal.name}
-                  onChange={(e) => {
-                    const updated = [...goals];
-                    updated[index].name = e.target.value;
-                    setGoals(updated);
-                  }}
-                  className="w-full border border-black p-2 rounded mb-2"
-                />
-
-                <label className="block font-semibold mb-2 text-gray-800">
-                  Target Amount
-                </label>
-                <input
-                  type="number"
-                  value={goal.amount}
-                  onChange={(e) => {
-                    const updated = [...goals];
-                    updated[index].amount = Number(e.target.value);
-                    setGoals(updated);
-                  }}
-                  className="w-full border border-black p-2 rounded mb-2"
-                />
-
-                <label className="block font-semibold mb-2 text-gray-800">
-                  Years to Goal
-                </label>
-                <input
-                  type="number"
-                  value={goal.years}
-                  onChange={(e) => {
-                    const updated = [...goals];
-                    updated[index].years = Number(e.target.value);
-                    setGoals(updated);
-                  }}
-                  className="w-full border border-black p-2 rounded"
-                />
-              </div>
-            ))}
-
-          </div>
-
-          <div className="space-y-6">
-
-            <div className="bg-white p-6 rounded-xl shadow border">
-              <h4 className="font-semibold text-gray-800 mb-4">
-                Total Monthly SIP Required
-              </h4>
-
-              <div className="text-3xl font-bold text-blue-700 text-center">
-                {formatNum(simulation.combinedSIP)}
-              </div>
-
+    <CalculatorShell
+      title="Financial Goals"
+      highlight="Calculator"
+      breadcrumb="Financial Goals"
+      description="Combine multiple goals and estimate the total monthly SIP needed at your expected return rate."
+      about={
+        <div className="space-y-4 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+          <h2 className="text-xl font-bold text-slate-900">Plan multiple goals together</h2>
+          <p>
+            Add education, marriage, home, or any other targets. The calculator estimates the SIP for each
+            goal and a combined monthly commitment.
+          </p>
+          <h3 className="text-lg font-semibold text-slate-900">Why use this calculator?</h3>
+          <p>
+            See how goals stack up side by side, then download a branded advisory PDF for discussion with
+            your advisor.
+          </p>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <CalcCard
+            title="Goal inputs"
+            action={
               <button
-                onClick={() => setShowForm(true)}
-                className="mt-6 bg-blue-600 text-white px-4 py-2 rounded-lg w-full">
-                Download Report
+                type="button"
+                onClick={addGoal}
+                className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-sm font-semibold text-sky-800 hover:bg-sky-100"
+              >
+                Add goal
               </button>
+            }
+          >
+            <div className="space-y-6">
+              {goals.map((goal, index) => (
+                <div
+                  key={index}
+                  className="space-y-4 border-b border-slate-100 pb-5 last:border-0 last:pb-0"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <FieldLabel>Goal {index + 1}</FieldLabel>
+                    {goals.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => removeGoal(index)}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </div>
+                  <div>
+                    <FieldLabel>Goal name</FieldLabel>
+                    <input
+                      type="text"
+                      value={goal.name}
+                      onChange={(e) => updateGoal(index, { name: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-base font-semibold text-slate-900 outline-none transition focus:border-sky-600 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                      placeholder="Goal name"
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Target amount</FieldLabel>
+                    <MoneyInput
+                      value={goal.amount}
+                      onChange={(v) => updateGoal(index, { amount: clamp(v, 0, 1e12) })}
+                      placeholder="Target amount"
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Years to goal</FieldLabel>
+                    <NumberField
+                      value={goal.years}
+                      min={1}
+                      max={50}
+                      onChange={(v) => updateGoal(index, { years: clamp(v, 1, 50) })}
+                    />
+                    <RangeField
+                      value={goal.years}
+                      min={1}
+                      max={50}
+                      onChange={(v) => updateGoal(index, { years: clamp(v, 1, 50) })}
+                    />
+                    <SliderMarks marks={["1y", "10y", "20y", "30y", "40y", "50y"]} />
+                  </div>
+                </div>
+              ))}
+
+              <div>
+                <FieldLabel>Expected return (% p.a.)</FieldLabel>
+                <NumberField
+                  value={annualReturn}
+                  min={0}
+                  max={30}
+                  step={0.1}
+                  onChange={(v) => setAnnualReturn(clamp(v, 0, 30))}
+                />
+                <RangeField
+                  value={annualReturn}
+                  min={0}
+                  max={30}
+                  step={0.1}
+                  onChange={(v) => setAnnualReturn(clamp(v, 0, 30))}
+                />
+                <SliderMarks marks={["0%", "7%", "12%", "18%", "24%", "30%"]} />
+              </div>
             </div>
+          </CalcCard>
 
-            <div className="bg-white p-6 rounded-xl shadow border">
-              <Pie ref={pieRef} data={pieData} />
+          <ChartPanel title="SIP by goal">
+            <Bar ref={barRef} data={growthData} options={DISPLAY_CHART_OPTIONS} />
+          </ChartPanel>
+        </div>
+
+        <div className="space-y-5">
+          <CalcCard
+            title="Breakdown"
+            action={<DownloadButton busy={pdfBusy} onClick={() => setShowForm(true)} />}
+          >
+            <div className="mx-auto w-full max-w-[240px]">
+              <Pie ref={pieRef} data={pieData} options={DISPLAY_PIE_OPTIONS} />
             </div>
+          </CalcCard>
 
-          </div>
+          <ResultPanel
+            title="Combined summary"
+            rows={[
+              ...simulation.goalDetails.map((g) => [
+                `${g.name || "Goal"} SIP`,
+                formatINR(g.sip),
+              ]),
+              ["Combined monthly SIP", formatINR(simulation.combinedSIP)],
+              ["Total invested (all goals)", formatINR(simulation.combinedInvested)],
+              ["Total goal value", formatINR(simulation.combinedFutureValue)],
+            ]}
+          />
         </div>
+      </div>
 
-        <div className="mt-10 bg-white p-6 rounded-xl shadow border">
-          <Bar ref={barRef} data={growthData} />
-        </div>
-
-      </main>
-
-      {showForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50"
-             onClick={() => setShowForm(false)}>
-          <div className="bg-white p-6 rounded-lg w-full max-w-md"
-               onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold mb-4 text-center text-black">
-              Fill Your Details
-            </h2>
-
-            {["name","email","mobile","goal"].map((field)=>(
-              <input
-                key={field}
-                type="text"
-                placeholder={field}
-                className="border p-2 rounded w-full mb-3 text-gray-800"
-                value={formData[field]}
-                onChange={(e)=>
-                  setFormData({...formData,[field]:e.target.value})
-                }
-              />
-            ))}
-
-            <button
-              onClick={handleSubmitForm}
-              className="bg-blue-600 text-white w-full p-2 rounded-md">
-              Submit & Download PDF
-            </button>
-          </div>
-        </div>
-      )}
-
-    </div>
+      <CalculatorDownloadForm
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={handleSubmitForm}
+        busy={pdfBusy}
+      />
+    </CalculatorShell>
   );
 }

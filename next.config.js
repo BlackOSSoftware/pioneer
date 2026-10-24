@@ -14,6 +14,18 @@ const nextConfig = {
             { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
         ],
     },
+    // Ensure Google verification HTML is reachable even if CDN caches miss static /public
+    async headers() {
+        return [
+            {
+                source: "/google6a60f7e35d18e395.html",
+                headers: [
+                    { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+                    { key: "Content-Type", value: "text/html; charset=utf-8" },
+                ],
+            },
+        ];
+    },
 };
 
 module.exports = nextConfig;
